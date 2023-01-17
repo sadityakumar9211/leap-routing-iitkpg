@@ -1,70 +1,52 @@
-# Getting Started with Create React App
+# Functionalities / Flow of the application:
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+1. User enters the source and destination ✅
+2. Using forward geocoding the text is converted to coordinates ✅
+3. These coordinates are then used to mark the location - source and destination - When source is entered create a marker for the source. - When destination is entered fetch and display the route. ✅
+   > Till here it will be same in all applications
+4. When user enters the submit button, we make call to directions API of mapbox and get the result.
 
-## Available Scripts
+   - In alternate case, we can make the api call to the hosted OSRM server (theirs or ours)
+5. We get the directions in a specific format (waypoints or vectors).
+6. Among multiple options of directions, we choose the the final result based on the preference.
+6. We display the results in the map using mapbox functions.
 
-In the project directory, you can run:
+# Non-Functional Requirements: -
 
-### `yarn start`
+- The `transport mode` is car(car), foot(walk), bike(motorbike), traffic
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Brainstorming:
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- Depending upon various modes of transportation, we will get geojson line (maybe 1 or more) and we will display these lines(directions) into the map.
 
-### `yarn test`
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+# Additional Features: 
+- Adding various types of controls so that the application looks great. [Various Controls](https://github.com/korywka/mapbox-gl-controls)
+- [Traffic Overlay layers](https://github.com/mapbox/mapbox-gl-traffic)
+- Mapbox atmosphere style - feature
 
-### `yarn build`
+# Make a complete application using just MapBox and a MabBox Wrapper .
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- It is easy to read a well documented documentation.
+- Next and Mapbox and well reputated companies have very good documentation.
+- Documentation is the key to the success of a good product for use in public development.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Useful Links
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- [Traffic integration in OSRM](https://blog.mapbox.com/traffic-data-supports-here-and-tomtom-with-real-time-and-historic-data-using-openlr-f6af26081a04)
 
-### `yarn eject`
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+- bbox India: 66, 5, 98, 37,
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### Things to do
+ 1. Display all the details of a particular path
+ - routing instructions
+ - route details 
+   - time
+   - distance
+   - marker depending on teh route
+   - how much better than other routes (a percentage information)
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `yarn build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- Alternate Paths
+ - add the things 
