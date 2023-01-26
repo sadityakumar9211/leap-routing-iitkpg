@@ -7,7 +7,7 @@ export default function Instruction({ index, instruction, mode }) {
     const distance = useRef(0)
     const time = useRef(0)
 
-    if (mode === 'driving-traffic') {
+    if (mode.includes('traffic')) {
         text.current = instruction?.maneuver?.instruction
         distance.current = instruction?.distance
         time.current = instruction?.duration_typical * 1000

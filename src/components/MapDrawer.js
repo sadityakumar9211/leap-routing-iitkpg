@@ -2,18 +2,22 @@ import { useState, useEffect } from 'react'
 import useInput from './useInput.js'
 import prettyMilliseconds from 'pretty-ms'
 import Instruction from './Instruction.js'
+import getRouteColor from '../utils/getRouteColor.js'
+import getIconFromMode from '../utils/getIconFromMode.js'
+import getShortestRoute from '../controllers/getShortestRoute.js'
+import getFastestRoute from '../controllers/getFastestRoute.js'
+import getLeapRoute from '../controllers/getLeapRoute.js'
+import getBalancedRoute from '../controllers/getBalancedRoute.js'
 const prettyMetric = require('pretty-metric')
 const mapboxgl = require('mapbox-gl/dist/mapbox-gl.js')
 
 export default function MapDrawer() {
     // Drawer
     const [isExpanded, setIsExpanded] = useState(false)
-    const handleExpand = () => {
-        setIsExpanded(!isExpanded)
-    }
+    const [isLoading, setIsLoading] = useState(false)
 
     // Form
-    const source = useInput('')
+    const source = useInput('') //custom hook
     const destination = useInput('')
     const [mode, setMode] = useState('none')
     const [routePreference, setRoutePreference] = useState('none')
@@ -21,42 +25,25 @@ export default function MapDrawer() {
     const [time, setTime] = useState(0)
     const [instructions, setInstructions] = useState([])
 
-    useEffect(() => {}, [source, destination, mode, routePreference])
-
     // Map
     // Initial Location
 
-    function getRouteColor(mode) {
-        if (routePreference == 'fastest') return '#f15bb5'
-        else if (routePreference == 'shortest') return '#00bbf9'
-        else if (mode == 'walking') return '#00f5d4'
-        else if (mode == 'cycling') return '#9b5de5'
-    }
-
-    const [position, setPosition] = useState([0,0])   //initial position
-    let currentMarker = ''
+    let position = [0, 0] // map start location.
     useEffect(() => {
         if (process.env.MAPBOX_API_KEY === 'undefined') {
-            console.log(
+            console.error(
                 'Mapbox API Key is not set. Please set it in .env file.'
             )
             return
-        } else {
-            console.log(process.env.MAPBOX_API_KEY)
         }
-
-        setupMap({ position, placeName: 'Default Location' })
+        setupMap({ position: position, placeName: 'Default Location' })
     }, [])
 
     //--------------- Initializes the map object globally-------------------
-
-    //updates the map-ads the marker and popups
-
-    //Initializes the map
-    function setupMap({ position, placeName, locationType="default"}) {
-        mapboxgl.accessToken =
-            'pk.eyJ1Ijoic2FkaXR5YTkyMTEiLCJhIjoiY2xidzNvcWQ2MXlrazNucW5rcGxnc2RncCJ9.1GMKNUsQUmXSxvrOqlDnsw'
-        console.log(`Position inside the setupMap is: ${position}`)
+    // Renders the map on the screen
+    function setupMap({ position, placeName, locationType = 'default' }) {
+        mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_API_KEY
+        // console.log(`Position inside the setupMap is: ${position}`)
         window.$map = new mapboxgl.Map({
             container: 'map-container',
             style: 'mapbox://styles/saditya9211/clbw1qkuo000u15o2afjcpknz',
@@ -67,34 +54,21 @@ export default function MapDrawer() {
             // hash: true,
         }).fitBounds(
             [
-                [67.77384991, 10.27430903],
-                [98.44100523, 36.45878352],
+                [67.77384991, 10.27430903], // southwest coordinates for india
+                [98.44100523, 36.45878352], // northeast coordinates for india
             ],
             {
-                padding: 20,
+                padding: 10, // padding around the map area - extra area of map around fitBounds in some units
             }
         )
-        // navigation control
-        if (locationType == "source" || locationType=="destination") {
-            //add marker
-            console.log("Add Marker at " + `${locationType}`)
-            new mapboxgl.Marker({
-                color: '#b32d2d',
-                // draggable: true,
-            })
-                .setLngLat(position)
-                .addTo(window.$map)
-                .setPopup(
-                    new mapboxgl.Popup().setHTML(
-                        `<p>${position}</p><p>(${placeName})</p>`
-                    ), {
-                        closeOnClick: true
-                    }
-                )
-            
-            
+        //adding the marker to the map if the location is source or destination
+        if (locationType == 'source') {
+            addMarkerToMap({ position, placeName, locationType })
+        } else if (locationType == 'destination') {
+            addMarkerToMap({ position, placeName, locationType })
         }
 
+        //add navigation control
         window.$map.addControl(
             new mapboxgl.NavigationControl({
                 visualizePitch: true,
@@ -102,7 +76,7 @@ export default function MapDrawer() {
             'bottom-right'
         )
 
-        // Adding Geolocation Marker
+        // Adding Geolocation Marker - to show the user's location
         window.$map.addControl(
             new mapboxgl.GeolocateControl({
                 positionOptions: {
@@ -115,25 +89,97 @@ export default function MapDrawer() {
         //Scale Control
         const scale = new mapboxgl.ScaleControl({
             maxWidth: 80,
-            unit: 'imperial',
+            unit: 'metric',
         })
         window.$map.addControl(scale, 'bottom-left')
 
-        scale.setUnit('metric')
-
         // Set marker options.
     }
-    function displayRoute(geojson, start, end, route) {
-        //Just displays the route on the map without removing any other route.
 
-        console.log({
-            geojson,
-            start,
-            end,
+    // adding marker to the map
+    function addMarkerToMap({ position, placeName, locationType = 'default' }) {
+        // if the marker at that location already exists
+        if (
+            window.$map.getLayer(
+                `${position[0]}-${position[1]}-${locationType}-marker`
+            )
+        ) {
+            // remove the marker layer
+            // window.$map.removeLayer(`${position[0]}-${position[1]}-${locationType}-marker`)
+            console.log('Removing the layer as it exits..')
+        }
+        console.log('coming out alive')
+        window.$map.on('style.load', function () {
+            console.log('not entering here...')
+            const icon = getIconFromMode({ mode, locationType })
+            icon.onload = function () {
+                try {
+                    window.$map.addImage(
+                        `${mode}-${routePreference}-${position[0]}-${position[1]}`,
+                        icon
+                    )
+                } catch (e) {
+                    console.error(e)
+                }
+                window.$map.addLayer({
+                    id: `${position[0]}-${position[1]}-${locationType}-marker`,
+                    type: 'symbol',
+                    source: {
+                        type: 'geojson',
+                        data: {
+                            type: 'Feature',
+                            geometry: {
+                                type: 'Point',
+                                coordinates: position,
+                            },
+                            properties: {
+                                title: `${placeName}`,
+                            },
+                        },
+                    },
+
+                    layout: {
+                        'icon-image': `${mode}-${routePreference}-${position[0]}-${position[1]}`,
+                        'icon-size': 0.12,
+                    },
+                })
+            }
         })
 
+        //popup is by default open
+        new mapboxgl.Popup()
+            .setLngLat(position)
+            .setHTML(`<h3 color: "black"><strong>${placeName}</strong></h3>`)
+            .addTo(window.$map)
+
+        //popup on clicking the marker
+        window.$map.on(
+            'click',
+            `${position[0]}-${position[1]}-${locationType}-marker`,
+            function (e) {
+                const coordinates = e.features[0].geometry.coordinates.slice()
+                // var description = e.features[0].properties.description
+                const title = e.features[0].properties.title
+                console.log(title)
+                while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                    coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360
+                }
+                new mapboxgl.Popup()
+                    .setLngLat(coordinates)
+                    .setHTML(title)
+                    .addTo(window.$map)
+            }
+        )
+    }
+
+    function displayRoute(geojson, start, end, routeId, tempRoutePreference) {
+        //adding the source and destination markers found in the route
+        //start marker
+
+        //Just displays a route on the map without removing any other route.
         window.$map.addLayer({
-            id: 'route',
+            id: routeId,
+            // id: 'route',
             type: 'line',
             source: {
                 type: 'geojson',
@@ -144,172 +190,420 @@ export default function MapDrawer() {
                 'line-cap': 'round',
             },
             paint: {
-                'line-color': getRouteColor(mode),
+                'line-color': getRouteColor(tempRoutePreference),
                 'line-width': 6,
-                'line-opacity': 1,
+                'line-opacity': 0.65,
             },
         })
-        //adding the source and destination markers found in the route
-        //start marker
-        new mapboxgl.Marker({
-            color: '#b32d2d',
-            // draggable: true,
-        })
-            .setLngLat(start.position)
-            .addTo(window.$map)
-            // add popup
-            .setPopup(
-                new mapboxgl.Popup().setHTML(
-                    `<p>${start.value}</p><p>(${start.position})</p>`
-                )
-            )
-        //end marker
-        new mapboxgl.Marker({
-            color: '#b32d2d',
-            // draggable: true,
-        })
-            .setLngLat(end.position)
-            .addTo(window.$map)
-            .setPopup(
-                new mapboxgl.Popup().setHTML(
-                    `<p>${end.value}</p><p>(${end.position})</p>`
-                )
-            )
 
-        // Add bound box for the map - to fit the route map to screen
+        const minLng = Math.min(start.position[0], end.position[0])
+        const maxLng = Math.max(start.position[0], end.position[0])
+        const minLat = Math.min(start.position[1], end.position[1])
+        const maxLat = Math.max(start.position[1], end.position[1])
 
-        let bbox
-        if (mode !== 'driving-traffic') {
-            bbox = route.bbox
-        } else {
-            const minLng = Math.min(start.position[0], end.position[0])
-            const maxLng = Math.max(start.position[0], end.position[0])
-            const minLat = Math.min(start.position[1], end.position[1])
-            const maxLat = Math.max(start.position[1], end.position[1])
-            bbox = [minLng, minLat, maxLng, maxLat]
-        }
         window.$map.fitBounds(
             [
-                [bbox[0], bbox[1]], // Southwest coordinates
-                [bbox[2], bbox[3]], // Northeast coordinates
+                [minLng, minLat], // Southwest coordinates
+                [minLng, maxLat], // Northeast coordinates
             ],
             {
-                padding: 300,
+                padding: 100,
             }
         )
     }
 
-    // Fetches the route and displays it in the map
-    const getRoutes = async (start, end) => {
-        console.log('getRoutes', start.position, end.position)
-        try {
-            console.log('Before query...')
-            let routes
-            if (mode === 'driving-traffic') {
-                const query = await fetch(
-                    `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${start.position[0]},${start.position[1]};${end.position[0]},${end.position[1]}?steps=true&geometries=geojson&alternatives=true&access_token=${mapboxgl.accessToken}`,
-                    { method: 'GET' }
-                )
-                const json = await query.json()
-                routes = json.routes
-            } else {
-                const query = await fetch(
-                    `https://graphhopper.com/api/1/route?point=${start.position[1]},${start.position[0]}&point=${end.position[1]},${end.position[0]}&vehicle=${mode}&debug=true&key=9720b98f-be36-41e3-b202-e20a55e5924f&type=json&points_encoded=false&algorithm=alternative_route&alternative_route.max_paths=3`,
-                    { method: 'GET' }
-                )
+    async function getMapboxRoutes() {
+        console.log('Calling Mapbox API...')
+        const query = await fetch(
+            `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${source.position[0]},${source.position[1]};${destination.position[0]},${destination.position[1]}?steps=true&geometries=geojson&alternatives=true&access_token=${mapboxgl.accessToken}`,
+            { method: 'GET' }
+        )
+        const json = await query.json()
+        const routes = json.routes
+        return routes
+    }
 
-                const json = await query.json()
-                console.log(json)
-                routes = json.paths // Two routes
+    async function getGraphhopperRoutes(temp_mode) {
+        console.log('Calling Graphhopper API...')
+        const query = await fetch(
+            `https://graphhopper.com/api/1/route?point=${source.position[1]},${source.position[0]}&point=${destination.position[1]},${destination.position[0]}&vehicle=${temp_mode}&debug=true&key=${process.env.REACT_APP_GRAPHHOPPER_API_KEY}&type=json&points_encoded=false&algorithm=alternative_route&alternative_route.max_paths=4`,
+            { method: 'GET' }
+        )
+        const json = await query.json()
+        const routes = json.paths // Two routes
+        return routes
+    }
+
+    async function getAllRoutes(start, end) {
+        //Handle the all routes cases - default case
+        //display the shortest route in the given mode
+
+        console.log('Inside getAllRoutes...')
+        let temp_mode = mode
+        let temp_routePreference = routePreference //intially - all
+
+        // removing all the other routes
+        let layers = window.$map.getStyle().layers
+        console.log({ layers })
+        for (let i = 0; i < layers.length; i++) {
+            if (layers[i].id.includes('-route')) {
+                window.$map.removeLayer(layers[i].id)
+                window.$map.removeSource(layers[i].id)
             }
-            console.log(routes)
-            const geojson = {
-                type: 'Feature',
-                properties: {},
-                geometry: {
-                    type: 'LineString',
-                    coordinates: '',
-                },
-            }
+        }
 
-            console.log('Route Preference: ', routePreference)
-            switch (routePreference) {
-                case 'shortest':
-                    console.log('Shortest Path...')
-                    routes.sort((a, b) => a.distance - b.distance)
-                    setDistance(routes[0].distance)
-                    if (mode === 'driving-traffic') {
-                        geojson.geometry.coordinates =
-                            routes[0].geometry.coordinates
-                        setTime(routes[0].duration)
-                        setInstructions(routes[0].legs[0].steps)
-                    } else {
-                        geojson.geometry.coordinates =
-                            routes[0].points.coordinates
-                        setTime(routes[0].time)
-                        setInstructions(routes[0].instructions)
-                    }
+        //Shortest Path
+        temp_routePreference = 'shortest'
 
-                    console.log({ geojson })
-                    if (window.$map.getSource('route')) {
-                        window.$map.getSource('route').setData(geojson)
-                    } else {
-                        displayRoute(geojson, start, end, routes[0])
-                    }
-                    break
+        console.log('Shortest Path...')
+        if (temp_mode == 'truck-traffic') temp_mode = 'truck'
+        else if (temp_mode == 'driving-traffic') temp_mode = 'car'
 
-                case 'fastest':
-                    console.log('Fastest Path...')
-                    routes.sort((a, b) => a.time - b.time)
-                    setDistance(routes[0].distance)
-                    if (mode === 'driving-traffic') {
-                        geojson.geometry.coordinates =
-                            routes[0].geometry.coordinates
-                        setTime(routes[0].duration)
-                        setInstructions(routes[0].legs[0].steps)
-                    } else {
-                        geojson.geometry.coordinates =
-                            routes[0].points.coordinates
-                        setTime(routes[0].time)
-                        setInstructions(routes[0].instructions)
-                    }
-                    console.log({ geojson })
-                    if (window.$map.getSource('route')) {
-                        window.$map.getSource('route').setData(geojson)
-                    } else {
-                        displayRoute(geojson, start, end, routes[0])
-                    }
-                    break
+        let geojson
+        let routes = await getGraphhopperRoutes(temp_mode)
+        ;({ geojson, routes } = getShortestRoute(routes, temp_mode))
 
-                case 'greenest':
-                    console.log('Greenest Path...')
-                    console.log('Greenest Route to be displayed here')
-                    break
+        let routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route-all`
+        if (window.$map.getSource(routeId)) {
+            console.log('changing the route source data...')
+            window.$map.getSource(routeId).setData(geojson)
+        } else {
+            console.log('displaying a new route...')
+            displayRoute(geojson, start, end, routeId, 'shortest')
+        }
 
-                case 'balanced':
-                    console.log('Balanced Path...')
-                    console.log('Balanced Route to be displayed here')
-                    break
-                default:
-                    break
-            }
+        //Fastest
+        //display the fastest route in the given mode
+        temp_routePreference = 'fastest'
+        console.log('Fastest Path...')
+        if (temp_mode == 'car') temp_mode = 'driving-traffic'
+        else if (temp_mode == 'truck') temp_mode = 'truck-traffic'
 
-            if (routePreference === 'all') {
-                //Handle the all routes cases
-                //Display all the routes one by one
-            }
-        } catch (e) {
-            console.log(e)
+        if (temp_mode.includes('traffic')) {
+            routes = await getMapboxRoutes()
+        } else {
+            routes = await getGraphhopperRoutes(temp_mode)
+        }
+        ;({ geojson, routes } = getFastestRoute(routes, temp_mode))
+
+        routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route-all`
+        if (window.$map.getSource(routeId)) {
+            window.$map.getSource(routeId).setData(geojson)
+            console.log('changing the route source data...')
+        } else {
+            console.log('displaying a new route...')
+            displayRoute(geojson, start, end, routeId, 'fastest')
+        }
+
+        //Leap Route
+        console.log('Leap Path...')
+        //display the leap route in the given mode
+        temp_routePreference = 'leap'
+
+        if (temp_mode == 'truck-traffic') temp_mode = 'truck'
+        else if (temp_mode == 'driving-traffic') temp_mode = 'car'
+
+        routes = await getGraphhopperRoutes(temp_mode)
+        console.log('The graphhopper routes is, ', { routes })
+        ;({ geojson, routes } = await getLeapRoute(routes))
+
+        routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route-all`
+        if (window.$map.getSource(routeId)) {
+            console.log('changing the route source data...')
+            window.$map.getSource(routeId).setData(geojson)
+        } else {
+            console.log('displaying a new route...')
+            console.log({ geojson })
+            console.log({ routes })
+            displayRoute(geojson, start, end, routeId, 'leap')
+        }
+
+        //Balanced Route
+        //display the balanced route in the given mode
+        console.log('Balanced Path...')
+
+        temp_routePreference = 'balanced'
+
+        if (temp_mode == 'car') temp_mode = 'driving-traffic'
+        else if (temp_mode == 'truck') temp_mode = 'truck-traffic'
+
+        if (
+            temp_mode === 'foot' ||
+            temp_mode === 'bike' ||
+            temp_mode === 'scooter'
+        ) {
+            routes = await getGraphhopperRoutes(temp_mode)
+        } else {
+            routes = await getMapboxRoutes()
+        }
+
+        ;({ geojson, routes } = await getBalancedRoute(routes, temp_mode))
+
+        routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route-all`
+        if (window.$map.getSource(routeId)) {
+            console.log('changing the current source data...')
+            window.$map.getSource(routeId).setData(geojson)
+            setIsLoading(false)
+        } else {
+            console.log('Displaying a new route...')
+            displayRoute(geojson, start, end, routeId, 'balanced')
+            setIsLoading(false)
         }
     }
 
+    // Fetches the route and displays it in the map
+    const getRoutes = async (start, end) => {
+        if (start != '' && end != '') {
+            console.log(
+                'Running getRoutes... with mode: ' +
+                    mode +
+                    ' and routePreference: ' +
+                    routePreference
+            )
+            try {
+                console.log('Before query...')
+
+                let temp_mode = `${mode}` + ''
+                let temp_routePreference = `${routePreference}` + ''
+
+                //modifies the mode and routePreference
+                function adjustModeRoutePreference(temp_routePreference) {
+                    if (temp_routePreference == 'balanced') {
+                        if (temp_mode == 'car') {
+                            setMode('driving-traffic')
+                            temp_mode = 'driving-traffic'
+                        } else if (temp_mode == 'truck') {
+                            setMode('truck-traffic')
+                            temp_mode = 'truck-traffic'
+                        }
+                    } else if (temp_routePreference == 'leap') {
+                        if (temp_mode == 'driving-traffic') {
+                            setMode('car')
+                            temp_mode = 'car'
+                        } else if (temp_mode == 'truck-traffic') {
+                            setMode('truck')
+                            temp_mode = 'truck'
+                        }
+                    }
+                }
+
+                // adjusting the mode and routePreference
+                adjustModeRoutePreference(temp_routePreference)
+
+                console.log({ mode, routePreference })
+                console.log({ temp_mode, temp_routePreference })
+
+                let routes
+                if (temp_mode.includes('traffic')) {
+                    routes = await getMapboxRoutes()
+                    console.log('Route from Mapbox: ', routes)
+                } else {
+                    routes = await getGraphhopperRoutes(temp_mode)
+                    console.log('Route from Graphhoperr: ', routes)
+                }
+                console.log({ routes })
+                // const geojson = {
+                //     type: 'Feature',
+                //     properties: {},
+                //     geometry: {
+                //         type: 'LineString',
+                //         coordinates: '',
+                //     },
+                // }
+
+                let geojson
+                let layers
+                let returnVal
+                let routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route`
+                switch (temp_routePreference) {
+                    case 'shortest':
+                        console.log('Shortest Path...')
+                        ;({ geojson, routes } = getShortestRoute(
+                            routes,
+                            temp_mode
+                        ))
+
+                        setDistance(routes[0].distance)
+                        if (temp_mode.includes('traffic')) {
+                            setTime(routes[0].duration)
+                            setInstructions(routes[0].legs[0].steps)
+                        } else {
+                            setTime(routes[0].time)
+                            setInstructions(routes[0].instructions)
+                        }
+
+                        // display this map
+                        // removing all the layers and sources from the map before adding the shortest route
+                        //we can also make the visibility property - 'none'
+                        layers = window.$map.getStyle().layers
+                        console.log({ layers })
+                        for (let i = 0; i < layers.length; i++) {
+                            if (layers[i].id.includes('-route')) {
+                                window.$map.removeLayer(layers[i].id)
+                                window.$map.removeSource(layers[i].id)
+                            }
+                        }
+                        routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route`
+                        if (window.$map.getSource(routeId)) {
+                            window.$map.getSource(routeId).setData(geojson)
+                            setIsLoading(false)
+                        } else {
+                            // This is how we define the id of the route.
+                            displayRoute(
+                                geojson,
+                                start,
+                                end,
+                                routeId,
+                                'shortest'
+                            )
+                            setIsLoading(false)
+                        }
+                        break
+
+                    case 'fastest':
+                        console.log('Fastest Path...')
+                        ;({ geojson, routes } = getFastestRoute(
+                            routes,
+                            temp_mode
+                        ))
+
+                        setDistance(routes[0].distance)
+
+                        if (temp_mode.includes('traffic')) {
+                            setTime(routes[0].duration)
+                            setInstructions(routes[0].legs[0].steps)
+                        } else {
+                            setTime(routes[0].time)
+                            setInstructions(routes[0].instructions)
+                        }
+
+                        //removing all the routes from map
+                        layers = window.$map.getStyle().layers
+                        for (let i = 0; i < layers.length; i++) {
+                            if (layers[i].id.includes('-route')) {
+                                window.$map.removeLayer(layers[i].id)
+                                window.$map.removeSource(layers[i].id)
+                            }
+                        }
+
+                        routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route`
+                        if (window.$map.getSource(routeId)) {
+                            window.$map.getSource(routeId).setData(geojson)
+                            setIsLoading(false)
+                        } else {
+                            displayRoute(
+                                geojson,
+                                start,
+                                end,
+                                routeId,
+                                'fastest'
+                            )
+                            setIsLoading(false)
+                        }
+                        break
+
+                    case 'leap':
+                        console.log('LEAP Path...') //get the routes from the graphhopper api  ✅
+                        //get the aqi values for the routes from waqi api ✅
+                        //and then sort them based on the aqi values ✅
+
+                        // if the mode is driving traffic or truck traffic then ignore the leap path
+                        // otherwise find the leap path and display it.
+
+                        //ignoring the traffic in case of the greenest route.
+                        ;({ geojson, routes } = await getLeapRoute(routes))
+
+                        setDistance(routes[0].distance)
+
+                        if (temp_mode.includes('traffic')) {
+                            setTime(routes[0].duration)
+                            setInstructions(routes[0].legs[0].steps)
+                        } else {
+                            setTime(routes[0].time)
+                            setInstructions(routes[0].instructions)
+                        }
+
+                        //removing all the other routes
+                        layers = window.$map.getStyle().layers
+                        console.log({ layers })
+                        for (let i = 0; i < layers.length; i++) {
+                            if (layers[i].id.includes('-route')) {
+                                window.$map.removeLayer(layers[i].id)
+                                window.$map.removeSource(layers[i].id)
+                            }
+                        }
+
+                        routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route`
+                        //if same route is present - then we modify its source
+                        if (window.$map.getSource(routeId)) {
+                            window.$map.getSource(routeId).setData(geojson)
+                            setIsLoading(false)
+                        } else {
+                            displayRoute(geojson, start, end, routeId, 'leap')
+                            setIsLoading(false)
+                        }
+                        console.log('Leap Route displayed...')
+                        break
+
+                    case 'balanced':
+                        console.log('Balanced Path...')
+                        ;({ geojson, routes } = await getBalancedRoute(
+                            routes,
+                            mode
+                        ))
+
+                        setDistance(routes[0].distance)
+
+                        if (temp_mode.includes('traffic')) {
+                            setTime(routes[0].duration)
+                            setInstructions(routes[0].legs[0].steps)
+                        } else {
+                            setTime(routes[0].time)
+                            setInstructions(routes[0].instructions)
+                        }
+
+                        //removing all the other routes
+                        layers = window.$map.getStyle().layers
+                        console.log({ layers })
+                        for (let i = 0; i < layers.length; i++) {
+                            if (layers[i].id.includes('-route')) {
+                                window.$map.removeLayer(layers[i].id)
+                                window.$map.removeSource(layers[i].id)
+                            }
+                        }
+
+                        routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route`
+                        if (window.$map.getSource(routeId)) {
+                            window.$map.getSource(routeId).setData(geojson)
+                            setIsLoading(false)
+                        } else {
+                            displayRoute(
+                                geojson,
+                                start,
+                                end,
+                                routeId,
+                                'balanced'
+                            )
+                            setIsLoading(false)
+                        }
+                        console.log('Balanced Route displayed...')
+                        break
+                }
+            } catch (e) {
+                setIsLoading(false)
+                console.log(e)
+            }
+        }
+    }
     return (
         <div className="drawer">
             <input
                 id="my-drawer"
                 type="checkbox"
                 className="drawer-toggle"
-                onClick={handleExpand}
+                onClick={() => {
+                    setIsExpanded(!isExpanded)
+                }}
             />
 
             <div className="drawer-content">
@@ -360,7 +654,7 @@ export default function MapDrawer() {
             </div>
             <div className="drawer-side">
                 <label htmlFor="my-drawer" className="drawer-overlay"></label>
-                <div className={"menu p-4 bg-base-100 text-base-content w-1/3" } >
+                <div className={'menu p-4 bg-base-100 text-base-content w-1/3'}>
                     <h1 className="text-xl font-semibold title-font text-center border-b-2 pb-2 mx-auto mb-4">
                         Air Polllution Routing
                     </h1>
@@ -391,7 +685,7 @@ export default function MapDrawer() {
                                                                 suggestion.center
                                                             )
                                                             source.setValue(
-                                                                suggestion.place_name
+                                                                suggestion.text
                                                             )
                                                             source.setPosition(
                                                                 suggestion.center
@@ -406,8 +700,9 @@ export default function MapDrawer() {
                                                                 position:
                                                                     suggestion.center,
                                                                 placeName:
-                                                                    suggestion.place_name,
-                                                                locationType: "source",
+                                                                    suggestion.text,
+                                                                locationType:
+                                                                    'source',
                                                             })
                                                         }}
                                                     >
@@ -444,7 +739,7 @@ export default function MapDrawer() {
                                                                 suggestion.center
                                                             )
                                                             destination.setValue(
-                                                                suggestion.place_name
+                                                                suggestion.text
                                                             )
                                                             destination.setPosition(
                                                                 suggestion.center
@@ -459,8 +754,17 @@ export default function MapDrawer() {
                                                                 position:
                                                                     suggestion.center,
                                                                 placeName:
-                                                                    suggestion.place_name,
-                                                                locationType: "destination",
+                                                                    suggestion.text,
+                                                                locationType:
+                                                                    'destination',
+                                                            })
+                                                            addMarkerToMap({
+                                                                position:
+                                                                    source.position,
+                                                                placeName:
+                                                                    source.value,
+                                                                locationType:
+                                                                    'source',
                                                             })
                                                         }}
                                                     >
@@ -487,9 +791,11 @@ export default function MapDrawer() {
                                 <option value="driving-traffic">
                                     Car - Traffic
                                 </option>
+                                <option value="truck-traffic">
+                                    Bus - Traffic
+                                </option>
                                 <option value="car">Car - Driving</option>
-                                <option value="truck">Truck</option>
-                                <option value="Scooter">Motorbike</option>
+                                <option value="scooter">Motorbike</option>
                                 <option value="bike">Cycling</option>
                                 <option value="foot">Walking</option>
                             </select>
@@ -511,9 +817,7 @@ export default function MapDrawer() {
                                 </option>
                                 <option value="fastest">Fastest (Time)</option>
                                 <option value="leap">LEAP (exposure)</option>
-                                <option value="safe">
-                                    Safe (Crime/Accidents)
-                                </option>
+                                <option value="safest">Safe (Crime)</option>
                                 <option value="emission">
                                     LCE(CO<sub>2</sub>)
                                 </option>
@@ -527,8 +831,12 @@ export default function MapDrawer() {
                                 onClick={(e) => {
                                     e.preventDefault()
                                     //Fetch the routes and display on the map
-                                    console.log({ source, destination })
-                                    getRoutes(source, destination)
+                                    if (routePreference == 'all') {
+                                        getAllRoutes(source, destination)
+                                    } else {
+                                        getRoutes(source, destination)
+                                    }
+                                    setIsLoading(true)
                                 }}
                             >
                                 Find
@@ -538,7 +846,7 @@ export default function MapDrawer() {
                     <div>
                         <div className="text-center text-xl">
                             <span className="text-green-400">
-                                {mode === 'driving-traffic'
+                                {mode.includes('traffic') //we have an error here...
                                     ? prettyMilliseconds(time * 1000)
                                     : prettyMilliseconds(time)}{' '}
                             </span>
@@ -549,7 +857,7 @@ export default function MapDrawer() {
                         </div>
                         <div className="mt-1">
                             <div className="text-xl text-center">
-                                Instructions
+                                Routing Instructions
                             </div>
                             {instructions.length > 0 ? (
                                 <div className="overflow-scroll h-80">
@@ -571,6 +879,13 @@ export default function MapDrawer() {
                                             }
                                         )}
                                     </ol>
+                                </div>
+                            ) : isLoading ? (
+                                <div className="flex flex-col items-center">
+                                    <span className="text-sm mb-2">
+                                        Fetching Data...
+                                    </span>
+                                    <progress className="progress w-11/12 progress-info"></progress>
                                 </div>
                             ) : (
                                 <div className="flex flex-row justify-center">

@@ -12,7 +12,6 @@ export default function useInput(initialValue) {
             const endpoint = `https://api.mapbox.com/geocoding/v5/mapbox.places/${e.target.value}.json?access_token=pk.eyJ1Ijoic2FkaXR5YTkyMTEiLCJhIjoiY2xidzNvcWQ2MXlrazNucW5rcGxnc2RncCJ9.1GMKNUsQUmXSxvrOqlDnsw&autocomplete=true&bbox=66,5,98,37&type=address,postcode,district,place,city,locality,neighborhood,block,street`
             const response = await fetch(endpoint)
             const results = await response.json()
-            console.log(results)
             setSuggestions(results?.features)
         } catch (e) {
             console.log({ 'Error Fetching Suggestions': e })
