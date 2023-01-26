@@ -655,8 +655,8 @@ export default function MapDrawer() {
             <div className="drawer-side">
                 <label htmlFor="my-drawer" className="drawer-overlay"></label>
                 <div className={'menu p-4 bg-base-100 text-base-content w-1/3'}>
-                    <h1 className="text-xl font-semibold title-font text-center border-b-2 pb-2 mx-auto mb-4">
-                        Air Polllution Routing
+                    <h1 className="text-lg font-semibold title-font text-center border-b-2 pb-2 mx-auto mb-4">
+                        Air Pollution Routing - IIT KGP
                     </h1>
                     <form>
                         <div className="flex flex-col space-y-3 items-center">
@@ -912,6 +912,15 @@ export default function MapDrawer() {
                                     </span>
                                 </div>
                             )}
+                                </div>
+                            </div>
+                            <div className='collapse mt-2'>
+                                <input type="checkbox" />
+                                <div className='collapse-title text-xl font-medium text-center badge-outline'>
+                                    Route Details
+                                </div>
+                                <div className='collapse-content'>
+                                Hi
                                 </div>
                             </div>
                     </div>

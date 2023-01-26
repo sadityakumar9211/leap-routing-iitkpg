@@ -32,7 +32,7 @@ export default async function getLeapRoute(routes) {
             if (steps[j].distance < 1000) {
                 //for < 1km
                 //if the distance is less than 1000m, then we don't need to add the points, just increase the skip distance
-                if (skippedDistance >= 3) {
+                if (skippedDistance >= 2) {
                     // the index of route point to be added is
                     let index = steps[j].interval[1]
                     tempRoutePoints.push(routeCoordinates[index])
@@ -43,8 +43,8 @@ export default async function getLeapRoute(routes) {
                     skippedTime += steps[j].time * 0.001
                     continue
                 }
-            } else if (steps[j].distance < 3000) {
-                //for distance > 1km and < 3km
+            } else if (steps[j].distance < 2000) {
+                //for distance > 1km and < 2km
                 skippedDistance = 0
                 skippedTime = 0
                 //taking the middle coordinate of the step
@@ -55,12 +55,12 @@ export default async function getLeapRoute(routes) {
                 tempRoutePoints.push(routeCoordinates[index])
                 // console.log(steps[j].time)
                 tempRoutePointTime.push(steps[j].time * 0.001)
-            } else if (steps[j].distance >= 3000) {
+            } else if (steps[j].distance >= 2000) {
                 //for distance > 3km
                 //adding the first point
                 skippedDistance = 0
                 skippedTime = 0
-                let chunks = Math.floor(steps[j].distance / 3000) //number of chunks
+                let chunks = Math.floor(steps[j].distance / 2000) //number of chunks
                 let timeChunk = Math.floor((steps[j].time * 0.001) / chunks) //time for each chunk
 
                 let chunkLength = Math.floor(
