@@ -857,12 +857,14 @@ export default function MapDrawer() {
                                 {isLoading? prettyMetric(0).humanize(): prettyMetric(distance).humanize()}
                             </span>
                         </div>
-                        <div className="mt-1">
-                            <div className="text-xl text-center">
-                                Routing Instructions
-                            </div>
-                            {instructions.length > 0 && !isLoading ? (
-                                <div className="overflow-scroll h-80">
+                            <div className='collapse mt-1'>
+                                <input type="checkbox" />
+                                <div className='collapse-title text-xl font-medium text-center'>
+                                    Instructions
+                                </div>
+                                <div className='collapse-content'>
+                                {instructions.length > 0 && !isLoading ? (
+                                <div className="overflow-auto h-80">
                                     <ol>
                                         {instructions.map(
                                             (instruction, index) => {
@@ -910,10 +912,15 @@ export default function MapDrawer() {
                                     </span>
                                 </div>
                             )}
-                        </div>
+                                </div>
+                            </div>
                     </div>
                 </div>
             </div>
         </div>
     )
 }
+
+
+
+
