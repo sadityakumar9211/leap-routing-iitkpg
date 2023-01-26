@@ -836,6 +836,8 @@ export default function MapDrawer() {
                                     } else {
                                         getRoutes(source, destination)
                                     }
+                                    setupMap({position: destination.position, placeName: destination.value, locationType: "destination"})
+                                    addMarkerToMap({position: source.position, placeName: source.value, locationType: "source"})
                                     setIsLoading(true)
                                 }}
                             >
@@ -846,20 +848,20 @@ export default function MapDrawer() {
                     <div>
                         <div className="text-center text-xl">
                             <span className="text-green-400">
-                                {mode.includes('traffic') //we have an error here...
+                                {isLoading? prettyMilliseconds(0) :  mode.includes('traffic') //we have an error here...
                                     ? prettyMilliseconds(time * 1000)
                                     : prettyMilliseconds(time)}{' '}
                             </span>
                             <span className="text-white">|</span>{' '}
                             <span className="text-orange-500">
-                                {prettyMetric(distance).humanize()}
+                                {isLoading? prettyMetric(0).humanize(): prettyMetric(distance).humanize()}
                             </span>
                         </div>
                         <div className="mt-1">
                             <div className="text-xl text-center">
                                 Routing Instructions
                             </div>
-                            {instructions.length > 0 ? (
+                            {instructions.length > 0 && !isLoading ? (
                                 <div className="overflow-scroll h-80">
                                     <ol>
                                         {instructions.map(
