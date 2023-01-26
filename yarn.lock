@@ -3425,6 +3425,7 @@ __metadata:
     "@testing-library/react": ^13.0.0
     "@testing-library/user-event": ^13.2.1
     daisyui: ^2.46.1
+    eslint-config-react-app: ^7.0.1
     global: ^4.4.0
     mapbox-gl: ^2.11.1
     pretty-metric: ^2.0.0
