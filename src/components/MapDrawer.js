@@ -872,19 +872,19 @@ export default function MapDrawer() {
                             >
                                 <div className="flex flex-row space-x-6 items-center">
                                     <div className="flex flex-col justify-center items-center">
-                                        <div className="w-6 h-6 bg-green-500 rounded-full"></div>
+                                        <div className="w-6 h-6 bg-shortest rounded-full"></div>
                                         <div className="text-xs">Shortest</div>
                                     </div>
                                     <div className="flex flex-col justify-center items-center">
-                                        <div className="w-6 h-6 bg-green-500 rounded-full"></div>
+                                        <div className="w-6 h-6 bg-fastest rounded-full"></div>
                                         <div className="text-xs">Fastest</div>
                                     </div>
                                     <div className="flex flex-col justify-center items-center">
-                                        <div className="w-6 h-6 bg-green-500 rounded-full"></div>
+                                        <div className="w-6 h-6 bg-leap rounded-full"></div>
                                         <div className="text-xs">LEAP</div>
                                     </div>
                                     <div className="flex flex-col justify-center items-center">
-                                        <div className="w-6 h-6 bg-green-500 rounded-full"></div>
+                                        <div className="w-6 h-6 bg-balanced rounded-full"></div>
                                         <div className="text-xs">Optimal</div>
                                     </div>
                                 </div>
