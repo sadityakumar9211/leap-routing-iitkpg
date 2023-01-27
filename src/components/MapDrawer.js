@@ -226,7 +226,7 @@ export default function MapDrawer() {
     async function getGraphhopperRoutes(temp_mode) {
         console.log('Calling Graphhopper API...')
         const query = await fetch(
-            `https://graphhopper.com/api/1/route?point=${source.position[1]},${source.position[0]}&point=${destination.position[1]},${destination.position[0]}&vehicle=${temp_mode}&debug=true&key=${process.env.REACT_APP_GRAPHHOPPER_API_KEY}&type=json&points_encoded=false&algorithm=alternative_route&alternative_route.max_paths=4`,
+            `https://graphhopper.com/api/1/route?point=${source.position[1]},${source.position[0]}&point=${destination.position[1]},${destination.position[0]}&vehicle=${temp_mode}&debug=true&key=${process.env.REACT_APP_GRAPHHOPPER_API_KEY}&type=json&points_encoded=false&algorithm=alternative_route&alternative_route.max_paths=4&alternative_route.max_weight_factor=1.6&alternative_route.max_share_factor=0.7`,
             { method: 'GET' }
         )
         const json = await query.json()
