@@ -8,6 +8,9 @@ export default async function getBalancedRoute(routes, mode) {
         mode == 'bike'
     ) {
         // sort the routes based on time
+        if (routes.length == 1){
+            return (getLeapRoute([routes[0]]))
+        }
         routes.sort((a, b) => a.time - b.time)
         return (getLeapRoute([routes[0], routes[1]])) //comparing the exposure of the fastest two routes for balanced routes in this case.
     }

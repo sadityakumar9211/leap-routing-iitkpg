@@ -15,6 +15,7 @@ export default function MapDrawer() {
     // Drawer
     const [isExpanded, setIsExpanded] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
+    const [showColorInfo, setShowColorInfo] = useState(false)
 
     // Form
     const source = useInput('') //custom hook
@@ -384,6 +385,22 @@ export default function MapDrawer() {
                             setMode('truck')
                             temp_mode = 'truck'
                         }
+                    } else if (temp_routePreference == 'shortest') {
+                        if (temp_mode == 'truck-traffic') {
+                            setMode('truck')
+                            temp_mode = 'truck'
+                        } else if (temp_mode == 'driving-traffic') {
+                            setMode('car')
+                            temp_mode = 'car'
+                        }
+                    } else if (temp_routePreference == 'fastest') {
+                        if (temp_mode == 'truck') {
+                            setMode('truck-traffic')
+                            temp_mode = 'truck-traffic'
+                        } else if (temp_mode == 'car') {
+                            setMode('driving-traffic')
+                            temp_mode = 'driving-traffic'
+                        }
                     }
                 }
 
@@ -654,7 +671,7 @@ export default function MapDrawer() {
             </div>
             <div className="drawer-side">
                 <label htmlFor="my-drawer" className="drawer-overlay"></label>
-                <div className={'menu p-4 bg-base-100 text-base-content w-1/3'}>
+                <div className={'menu p-4 bg-base-100 w-10/12 md:w-1/3'}>
                     <h1 className="text-lg font-semibold title-font text-center border-b-2 pb-2 mx-auto mb-4">
                         Air Pollution Routing - IIT KGP
                     </h1>
@@ -672,14 +689,14 @@ export default function MapDrawer() {
                                 {source.suggestions?.length > 0 && (
                                     <div
                                         name="suggestion-wrapper"
-                                        className="bg-gray-600 text-white absolute w-11/12 border rounded-md z-50"
+                                        className="bg-gray-600 text-white absolute right-0 w-11/12 border rounded-md z-50"
                                     >
                                         {source.suggestions.map(
                                             (suggestion, index) => {
                                                 return (
                                                     <div
                                                         key={index}
-                                                        className="hover:cursor-pointer max-w-sm"
+                                                        className="hover:cursor-pointer max-w-sm border-b-2 border-gray-400 p-2"
                                                         onClick={() => {
                                                             console.log(
                                                                 suggestion.center
@@ -726,14 +743,14 @@ export default function MapDrawer() {
                                 {destination.suggestions?.length > 0 && (
                                     <div
                                         name="suggestion-wrapper"
-                                        className="bg-gray-600 text-white absolute w-11/12 border rounded-md z-50"
+                                        className="bg-gray-600 text-white absolute right-0 w-11/12 border rounded-md z-50"
                                     >
                                         {destination.suggestions.map(
                                             (suggestion, index) => {
                                                 return (
                                                     <div
                                                         key={index}
-                                                        className="hover:cursor-pointer max-w-sm"
+                                                        className="hover:cursor-pointer max-w-sm border-b-2 border-gray-400 p-2"
                                                         onClick={() => {
                                                             console.log(
                                                                 suggestion.center
@@ -788,44 +805,90 @@ export default function MapDrawer() {
                                 <option disabled value="none">
                                     Select Mode of Transport
                                 </option>
-                                <option value="driving-traffic">
-                                    Car - Traffic
-                                </option>
-                                <option value="truck-traffic">
-                                    Bus - Traffic
-                                </option>
-                                <option value="car">Car - Driving</option>
+                                <option value="driving-traffic">Car</option>
+                                <option value="truck-traffic">Bus</option>
+                                {/* <option value="car">Car - Driving</option> */}
                                 <option value="scooter">Motorbike</option>
                                 <option value="bike">Cycling</option>
                                 <option value="foot">Walking</option>
                             </select>
 
-                            <select
-                                className="select select-sm select-bordered w-full max-w-xs"
-                                required
-                                value={routePreference}
-                                onChange={(e) => {
-                                    setRoutePreference(e.target.value)
-                                    console.log(e.target.value)
-                                }}
+                            <div className="flex flex-row justify-evenly items-center">
+                                <select
+                                    className="select select-sm select-bordered max-w-xs"
+                                    required
+                                    value={routePreference}
+                                    onChange={(e) => {
+                                        setRoutePreference(e.target.value)
+                                        console.log(e.target.value)
+                                    }}
+                                >
+                                    <option disabled value="none">
+                                        Select Route Preference
+                                    </option>
+                                    <option value="shortest">
+                                        Shortest (Distance)
+                                    </option>
+                                    <option value="fastest">
+                                        Fastest (Time)
+                                    </option>
+                                    <option value="leap">
+                                        LEAP (exposure)
+                                    </option>
+                                    <option value="safest">Safe (Crime)</option>
+                                    <option value="emission">
+                                        Least Carbon Emission(CO<sub>2</sub>)
+                                    </option>
+                                    <option value="balanced">
+                                        Optimal (recommended)
+                                    </option>
+                                    <option value="all">All</option>
+                                </select>
+                                <div className="ml-2">
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        strokeWidth={1.5}
+                                        stroke="currentColor"
+                                        className="w-6 h-6"
+                                        onClick={() => {
+                                            setShowColorInfo(!showColorInfo)
+                                            console.log('click registered')
+                                        }}
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
+                                        />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div
+                                className={
+                                    showColorInfo?'block':'hidden'
+                                }
                             >
-                                <option disabled value="none">
-                                    Select Route Preference
-                                </option>
-                                <option value="shortest">
-                                    Shortest (Distance)
-                                </option>
-                                <option value="fastest">Fastest (Time)</option>
-                                <option value="leap">LEAP (exposure)</option>
-                                <option value="safest">Safe (Crime)</option>
-                                <option value="emission">
-                                    LCE(CO<sub>2</sub>)
-                                </option>
-                                <option value="balanced">
-                                    Balanced (recommended)
-                                </option>
-                                <option value="all">All</option>
-                            </select>
+                                <div className="flex flex-row space-x-6 items-center">
+                                    <div className="flex flex-col justify-center items-center">
+                                        <div className="w-6 h-6 bg-green-500 rounded-full"></div>
+                                        <div className="text-xs">Shortest</div>
+                                    </div>
+                                    <div className="flex flex-col justify-center items-center">
+                                        <div className="w-6 h-6 bg-green-500 rounded-full"></div>
+                                        <div className="text-xs">Fastest</div>
+                                    </div>
+                                    <div className="flex flex-col justify-center items-center">
+                                        <div className="w-6 h-6 bg-green-500 rounded-full"></div>
+                                        <div className="text-xs">LEAP</div>
+                                    </div>
+                                    <div className="flex flex-col justify-center items-center">
+                                        <div className="w-6 h-6 bg-green-500 rounded-full"></div>
+                                        <div className="text-xs">Optimal</div>
+                                    </div>
+                                </div>
+                            </div>
                             <button
                                 className="btn btn-wide"
                                 onClick={(e) => {
@@ -836,8 +899,16 @@ export default function MapDrawer() {
                                     } else {
                                         getRoutes(source, destination)
                                     }
-                                    setupMap({position: destination.position, placeName: destination.value, locationType: "destination"})
-                                    addMarkerToMap({position: source.position, placeName: source.value, locationType: "source"})
+                                    setupMap({
+                                        position: destination.position,
+                                        placeName: destination.value,
+                                        locationType: 'destination',
+                                    })
+                                    addMarkerToMap({
+                                        position: source.position,
+                                        placeName: source.value,
+                                        locationType: 'source',
+                                    })
                                     setIsLoading(true)
                                 }}
                             >
@@ -848,88 +919,86 @@ export default function MapDrawer() {
                     <div>
                         <div className="text-center text-xl">
                             <span className="text-green-400">
-                                {isLoading? prettyMilliseconds(0) :  mode.includes('traffic') //we have an error here...
+                                {isLoading
+                                    ? prettyMilliseconds(0)
+                                    : mode.includes('traffic') //we have an error here...
                                     ? prettyMilliseconds(time * 1000)
                                     : prettyMilliseconds(time)}{' '}
                             </span>
                             <span className="text-white">|</span>{' '}
                             <span className="text-orange-500">
-                                {isLoading? prettyMetric(0).humanize(): prettyMetric(distance).humanize()}
+                                {isLoading
+                                    ? prettyMetric(0).humanize()
+                                    : prettyMetric(distance).humanize()}
                             </span>
                         </div>
-                            <div className='collapse mt-1'>
-                                <input type="checkbox" />
-                                <div className='collapse-title text-xl font-medium text-center'>
-                                    Instructions
-                                </div>
-                                <div className='collapse-content'>
+                        <div className="collapse mt-1">
+                            <input type="checkbox" />
+                            <div className="collapse-title text-xl font-medium text-center">
+                                Instructions
+                            </div>
+                            <div className="collapse-content">
                                 {instructions.length > 0 && !isLoading ? (
-                                <div className="overflow-auto h-80">
-                                    <ol>
-                                        {instructions.map(
-                                            (instruction, index) => {
-                                                return (
-                                                    <li key={index}>
-                                                        <Instruction
-                                                            key={index}
-                                                            index={index}
-                                                            instruction={
-                                                                instruction
-                                                            }
-                                                            mode={mode}
-                                                        />
-                                                    </li>
-                                                )
-                                            }
-                                        )}
-                                    </ol>
-                                </div>
-                            ) : isLoading ? (
-                                <div className="flex flex-col items-center">
-                                    <span className="text-sm mb-2">
-                                        Fetching Data...
-                                    </span>
-                                    <progress className="progress w-11/12 progress-info"></progress>
-                                </div>
-                            ) : (
-                                <div className="flex flex-row justify-center">
-                                    <span>Wow Such Empty!!</span>
-                                    <span>
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            strokeWidth={1.5}
-                                            stroke="currentColor"
-                                            className="w-6 h-6 ml-2"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z"
-                                            />
-                                        </svg>
-                                    </span>
-                                </div>
-                            )}
-                                </div>
+                                    <div className="overflow-auto h-80">
+                                        <ol>
+                                            {instructions.map(
+                                                (instruction, index) => {
+                                                    return (
+                                                        <li key={index}>
+                                                            <Instruction
+                                                                key={index}
+                                                                index={index}
+                                                                instruction={
+                                                                    instruction
+                                                                }
+                                                                mode={mode}
+                                                            />
+                                                        </li>
+                                                    )
+                                                }
+                                            )}
+                                        </ol>
+                                    </div>
+                                ) : isLoading ? (
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-sm mb-2">
+                                            Fetching Data...
+                                        </span>
+                                        <progress className="progress w-11/12 progress-info"></progress>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-row justify-center">
+                                        <span>Wow Such Empty!!</span>
+                                        <span>
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                strokeWidth={1.5}
+                                                stroke="currentColor"
+                                                className="w-6 h-6 ml-2"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z"
+                                                />
+                                            </svg>
+                                        </span>
+                                    </div>
+                                )}
                             </div>
-                            <div className='collapse mt-2'>
-                                <input type="checkbox" />
-                                <div className='collapse-title text-xl font-medium text-center badge-outline'>
-                                    Route Details
-                                </div>
-                                <div className='collapse-content'>
-                                Hi
-                                </div>
+                        </div>
+                        <div className="collapse mt-2">
+                            <input type="checkbox" />
+                            <div className="collapse-title text-xl font-medium text-center badge-outline">
+                                Route Details
                             </div>
+                            <div className="collapse-content">Hi</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     )
 }
-
-
-
-

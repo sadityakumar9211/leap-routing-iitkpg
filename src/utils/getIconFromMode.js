@@ -7,8 +7,8 @@ export default function getIconFromMode({ mode, locationType }) {
             icon.width = 800
         } else if (mode === 'truck' || mode === 'truck-traffic') {
             icon.src = '/images/bus.png'
-            icon.height = 600
-            icon.width = 700
+            icon.height = 400
+            icon.width = 900
         } else if (mode == 'scooter') {
             icon.height = 800
             icon.width = 600
