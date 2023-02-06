@@ -20,8 +20,8 @@ export default function MapDrawer() {
     // Form
     const source = useInput('') //custom hook
     const destination = useInput('')
-    const [mode, setMode] = useState('None')
-    const [routePreference, setRoutePreference] = useState('None')
+    const [mode, setMode] = useState('car')
+    const [routePreference, setRoutePreference] = useState('shortest')
     const [distance, setDistance] = useState(0)
     const [time, setTime] = useState(0)
     const [instructions, setInstructions] = useState([])
@@ -827,7 +827,7 @@ export default function MapDrawer() {
                                     console.log(e.target.value)
                                 }}
                             >
-                                <option disabled value="none">
+                                <option disabled value="none" selected>
                                     Select Mode of Transport
                                 </option>
                                 <option value="driving-traffic">Car</option>
