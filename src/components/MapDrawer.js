@@ -20,11 +20,18 @@ export default function MapDrawer() {
     // Form
     const source = useInput('') //custom hook
     const destination = useInput('')
-    const [mode, setMode] = useState('none')
-    const [routePreference, setRoutePreference] = useState('none')
+    const [mode, setMode] = useState('None')
+    const [routePreference, setRoutePreference] = useState('None')
     const [distance, setDistance] = useState(0)
     const [time, setTime] = useState(0)
     const [instructions, setInstructions] = useState([])
+
+
+    // Type of Routes
+    const [shortestRoute, setShortestRoute] = useState({})
+    const [fastestRoute, setFastestRoute] = useState({})
+    const [leapRoute, setLeapRoute] = useState({})
+    const [balancedRoute, setBalancedRoute] = useState({})
 
     // Map
     // Initial Location
@@ -267,9 +274,11 @@ export default function MapDrawer() {
         let routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route-all`
         if (window.$map.getSource(routeId)) {
             console.log('changing the route source data...')
+            setShortestRoute(routes[0])
             window.$map.getSource(routeId).setData(geojson)
         } else {
             console.log('displaying a new route...')
+            setShortestRoute(routes[0])
             displayRoute(geojson, start, end, routeId, 'shortest')
         }
 
@@ -290,9 +299,11 @@ export default function MapDrawer() {
         routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route-all`
         if (window.$map.getSource(routeId)) {
             window.$map.getSource(routeId).setData(geojson)
+            setFastestRoute(routes[0])
             console.log('changing the route source data...')
         } else {
             console.log('displaying a new route...')
+            setFastestRoute(routes[0])
             displayRoute(geojson, start, end, routeId, 'fastest')
         }
 
@@ -311,11 +322,13 @@ export default function MapDrawer() {
         routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route-all`
         if (window.$map.getSource(routeId)) {
             console.log('changing the route source data...')
+            setLeapRoute(routes[0])
             window.$map.getSource(routeId).setData(geojson)
         } else {
             console.log('displaying a new route...')
             console.log({ geojson })
             console.log({ routes })
+            setLeapRoute(routes[0])
             displayRoute(geojson, start, end, routeId, 'leap')
         }
 
@@ -344,10 +357,12 @@ export default function MapDrawer() {
         if (window.$map.getSource(routeId)) {
             console.log('changing the current source data...')
             window.$map.getSource(routeId).setData(geojson)
+            setBalancedRoute(routes[0])
             setIsLoading(false)
         } else {
             console.log('Displaying a new route...')
             displayRoute(geojson, start, end, routeId, 'balanced')
+            setBalancedRoute(routes[0])
             setIsLoading(false)
         }
     }
@@ -463,9 +478,11 @@ export default function MapDrawer() {
                         routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route`
                         if (window.$map.getSource(routeId)) {
                             window.$map.getSource(routeId).setData(geojson)
+                            setShortestRoute(routes[0])
                             setIsLoading(false)
                         } else {
                             // This is how we define the id of the route.
+                            setShortestRoute(routes[0])
                             displayRoute(
                                 geojson,
                                 start,
@@ -506,8 +523,10 @@ export default function MapDrawer() {
                         routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route`
                         if (window.$map.getSource(routeId)) {
                             window.$map.getSource(routeId).setData(geojson)
+                            setFastestRoute(routes[0])
                             setIsLoading(false)
                         } else {
+                            setFastestRoute(routes[0])
                             displayRoute(
                                 geojson,
                                 start,
@@ -554,9 +573,11 @@ export default function MapDrawer() {
                         //if same route is present - then we modify its source
                         if (window.$map.getSource(routeId)) {
                             window.$map.getSource(routeId).setData(geojson)
+                            setLeapRoute(routes[0])
                             setIsLoading(false)
                         } else {
                             displayRoute(geojson, start, end, routeId, 'leap')
+                            setLeapRoute(routes[0])
                             setIsLoading(false)
                         }
                         console.log('Leap Route displayed...')
@@ -592,8 +613,10 @@ export default function MapDrawer() {
                         routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route`
                         if (window.$map.getSource(routeId)) {
                             window.$map.getSource(routeId).setData(geojson)
+                            setBalancedRoute(routes[0])
                             setIsLoading(false)
                         } else {
+                            setBalancedRoute(routes[0])
                             displayRoute(
                                 geojson,
                                 start,
@@ -671,7 +694,9 @@ export default function MapDrawer() {
             </div>
             <div className="drawer-side">
                 <label htmlFor="my-drawer" className="drawer-overlay"></label>
-                <div className={'menu p-4 bg-base-100 w-10/12 md:w-1/3'}>
+                <div
+                    className={'menu p-4 bg-base-100 w-10/12 md:w-1/3 lg:w-1/4'}
+                >
                     <h1 className="text-lg font-semibold title-font text-center border-b-2 pb-2 mx-auto mb-4">
                         Air Pollution Routing - IIT KGP
                     </h1>
@@ -865,11 +890,7 @@ export default function MapDrawer() {
                                     </svg>
                                 </div>
                             </div>
-                            <div
-                                className={
-                                    showColorInfo?'block':'hidden'
-                                }
-                            >
+                            <div className={showColorInfo ? 'block' : 'hidden'}>
                                 <div className="flex flex-row space-x-6 items-center">
                                     <div className="flex flex-col justify-center items-center">
                                         <div className="w-6 h-6 bg-shortest rounded-full"></div>
@@ -934,7 +955,7 @@ export default function MapDrawer() {
                         </div>
                         <div className="collapse mt-1">
                             <input type="checkbox" />
-                            <div className="collapse-title text-xl font-medium text-center">
+                            <div className="collapse-title text-xl font-medium text-center underline">
                                 Instructions
                             </div>
                             <div className="collapse-content">
@@ -991,10 +1012,76 @@ export default function MapDrawer() {
                         </div>
                         <div className="collapse mt-2">
                             <input type="checkbox" />
-                            <div className="collapse-title text-xl font-medium text-center badge-outline">
+                            <div className="collapse-title text-xl font-medium text-center underline">
                                 Route Details
                             </div>
-                            <div className="collapse-content">Hi</div>
+                            <div className="collapse-content">
+                                {routePreference == 'all' ? (
+                                    <div>Details of all the routes one-by-one</div>
+                                ) : (
+                                    <ul>
+                                        <li>Vehicle Profile: {mode}</li>
+                                        <li>
+                                            Route Preference: {routePreference}
+                                        </li>
+                                        
+
+                                        { routePreference == 'shortest'? (
+                                            <li>Distance: {prettyMetric(shortestRoute.distance).humanize()}</li>
+                                        ): (
+                                            routePreference == 'fastest'? (
+                                                <li>Distance: {prettyMetric(fastestRoute.distance).humanize()}</li>
+                                            ) : (
+                                                routePreference == 'leap'? (
+                                                    <li>Distance: {prettyMetric(leapRoute.distance).humanize()}</li>
+                                                ) : (
+                                                    routePreference == 'balanced'? (
+                                                        <li>Distance: {prettyMetric(balancedRoute.distance).humanize()}</li>
+                                                    ):(
+                                                        <li>Distance: {`No Route Selected`}</li>
+                                                    )
+                                                )
+                                            )
+                                        )}
+                                        { routePreference == 'shortest'? (
+                                            <li>Time Taken: {shortestRoute.time}</li>
+                                        ): (
+                                            routePreference == 'fastest'? (
+                                                <li>Time Taken: {fastestRoute.duration}</li>
+                                            ) : (
+                                                routePreference == 'leap'? (
+                                                    <li>Time Taken: {leapRoute.time}</li>
+                                                ) : (
+                                                    routePreference == 'balanced'? (
+                                                        <li>Time Taken: {balancedRoute.duration}</li>
+                                                    ):(
+                                                        <li>Time Taken: {`No Route Selected`}</li>
+                                                    )
+                                                )
+                                            )
+                                        )}
+
+                                        { routePreference == 'shortest'? (
+                                            <li>Exposure: {shortestRoute.totalExposure}</li>
+                                        ): (
+                                            routePreference == 'fastest'? (
+                                                <li>Exposure: {fastestRoute.totalExposure}</li>
+                                            ) : (
+                                                routePreference == 'leap'? (
+                                                    <li>Exposure: {leapRoute.totalExposure}</li>
+                                                ) : (
+                                                    routePreference == 'balanced'? (
+                                                        <li>Exposure: {balancedRoute.totalExposure}</li>
+                                                    ):(
+                                                        <li>Exposure: {`No Route Selected`}</li>
+                                                    )
+                                                )
+                                            )
+                                        )}
+                                        
+                                    </ul>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
