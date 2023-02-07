@@ -26,7 +26,6 @@ export default function MapDrawer() {
     const [time, setTime] = useState(0)
     const [instructions, setInstructions] = useState([])
 
-
     // Type of Routes
     const [shortestRoute, setShortestRoute] = useState({})
     const [fastestRoute, setFastestRoute] = useState({})
@@ -264,8 +263,8 @@ export default function MapDrawer() {
         temp_routePreference = 'shortest'
 
         console.log('Shortest Path...')
-        if (temp_mode == 'truck-traffic') temp_mode = 'truck'
-        else if (temp_mode == 'driving-traffic') temp_mode = 'car'
+        // if (temp_mode == 'truck-traffic') temp_mode = 'truck'
+        if (temp_mode == 'driving-traffic') temp_mode = 'car'
 
         let geojson
         let routes = await getGraphhopperRoutes(temp_mode)
@@ -287,7 +286,7 @@ export default function MapDrawer() {
         temp_routePreference = 'fastest'
         console.log('Fastest Path...')
         if (temp_mode == 'car') temp_mode = 'driving-traffic'
-        else if (temp_mode == 'truck') temp_mode = 'truck-traffic'
+        else if (temp_mode == 'truck') temp_mode = 'driving-traffic'
 
         if (temp_mode.includes('traffic')) {
             routes = await getMapboxRoutes()
@@ -388,18 +387,20 @@ export default function MapDrawer() {
                         if (temp_mode == 'car') {
                             setMode('driving-traffic')
                             temp_mode = 'driving-traffic'
-                        } else if (temp_mode == 'truck') {
-                            setMode('truck-traffic')
-                            temp_mode = 'truck-traffic'
                         }
+                        // else if (temp_mode == 'truck') {
+                        //     setMode('truck-traffic')
+                        //     temp_mode = 'truck-traffic'
+                        // }
                     } else if (temp_routePreference == 'leap') {
                         if (temp_mode == 'driving-traffic') {
                             setMode('car')
                             temp_mode = 'car'
-                        } else if (temp_mode == 'truck-traffic') {
-                            setMode('truck')
-                            temp_mode = 'truck'
                         }
+                        // else if (temp_mode == 'truck-traffic') {
+                        //     setMode('truck')
+                        //     temp_mode = 'truck'
+                        // }
                     } else if (temp_routePreference == 'shortest') {
                         if (temp_mode == 'truck-traffic') {
                             setMode('truck')
@@ -411,7 +412,7 @@ export default function MapDrawer() {
                     } else if (temp_routePreference == 'fastest') {
                         if (temp_mode == 'truck') {
                             setMode('truck-traffic')
-                            temp_mode = 'truck-traffic'
+                            temp_mode = 'driving-traffic'
                         } else if (temp_mode == 'car') {
                             setMode('driving-traffic')
                             temp_mode = 'driving-traffic'
@@ -831,7 +832,7 @@ export default function MapDrawer() {
                                     Select Mode of Transport
                                 </option>
                                 <option value="driving-traffic">Car</option>
-                                <option value="truck-traffic">Bus</option>
+                                <option value="truck">Bus</option>
                                 {/* <option value="car">Car - Driving</option> */}
                                 <option value="scooter">Motorbike</option>
                                 <option value="bike">Cycling</option>
@@ -849,7 +850,7 @@ export default function MapDrawer() {
                                     }}
                                 >
                                     <option disabled value="none">
-                                        Select Route Preference
+                                        -- Select Route Preference --
                                     </option>
                                     <option value="shortest">
                                         Shortest (Distance)
@@ -860,8 +861,10 @@ export default function MapDrawer() {
                                     <option value="leap">
                                         LEAP (exposure)
                                     </option>
-                                    <option value="safest">Safe (Crime)</option>
-                                    <option value="emission">
+                                    <option value="safest" disabled>
+                                        Safe (Crime)
+                                    </option>
+                                    <option value="emission" disabled>
                                         Least Carbon Emission(CO<sub>2</sub>)
                                     </option>
                                     <option value="balanced">
@@ -938,78 +941,84 @@ export default function MapDrawer() {
                         </div>
                     </form>
                     <div>
-                        <div className="text-center text-xl">
-                            <span className="text-green-400">
-                                {isLoading
-                                    ? prettyMilliseconds(0)
-                                    : mode.includes('traffic') //we have an error here...
-                                    ? prettyMilliseconds(time * 1000)
-                                    : prettyMilliseconds(time)}{' '}
-                            </span>
-                            <span className="text-white">|</span>{' '}
-                            <span className="text-orange-500">
-                                {isLoading
-                                    ? prettyMetric(0).humanize()
-                                    : prettyMetric(distance).humanize()}
-                            </span>
-                        </div>
-                        <div className="collapse mt-1">
-                            <input type="checkbox" />
-                            <div className="collapse-title text-xl font-medium text-center underline">
-                                Instructions
+                        {routePreference != 'all' && (
+                            <div className="text-center text-xl">
+                                <span className="text-green-400">
+                                    {isLoading
+                                        ? prettyMilliseconds(0)
+                                        : mode.includes('traffic') //we have an error here...
+                                        ? prettyMilliseconds(time * 1000)
+                                        : prettyMilliseconds(time)}{' '}
+                                </span>
+                                <span className="text-white">|</span>{' '}
+                                <span className="text-orange-500">
+                                    {isLoading
+                                        ? prettyMetric(0).humanize()
+                                        : prettyMetric(distance).humanize()}
+                                </span>
                             </div>
-                            <div className="collapse-content">
-                                {instructions.length > 0 && !isLoading ? (
-                                    <div className="overflow-auto h-80">
-                                        <ol>
-                                            {instructions.map(
-                                                (instruction, index) => {
-                                                    return (
-                                                        <li key={index}>
-                                                            <Instruction
-                                                                key={index}
-                                                                index={index}
-                                                                instruction={
-                                                                    instruction
-                                                                }
-                                                                mode={mode}
-                                                            />
-                                                        </li>
-                                                    )
-                                                }
-                                            )}
-                                        </ol>
-                                    </div>
-                                ) : isLoading ? (
-                                    <div className="flex flex-col items-center">
-                                        <span className="text-sm mb-2">
-                                            Fetching Data...
-                                        </span>
-                                        <progress className="progress w-11/12 progress-info"></progress>
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-row justify-center">
-                                        <span>Wow Such Empty!!</span>
-                                        <span>
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                strokeWidth={1.5}
-                                                stroke="currentColor"
-                                                className="w-6 h-6 ml-2"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z"
-                                                />
-                                            </svg>
-                                        </span>
-                                    </div>
-                                )}
+                        )}
+                        {routePreference != 'all' && (
+                            <div className="collapse mt-1">
+                                <input type="checkbox" />
+                                <div className="collapse-title text-xl font-medium text-center underline">
+                                    Instructions
+                                </div>
+                                <div className="collapse-content">
+                                    {instructions.length > 0 && !isLoading ? (
+                                        <div className="overflow-auto h-80">
+                                            <ol>
+                                                {instructions.map(
+                                                    (instruction, index) => {
+                                                        return (
+                                                            <li key={index}>
+                                                                <Instruction
+                                                                    key={index}
+                                                                    index={
+                                                                        index
+                                                                    }
+                                                                    instruction={
+                                                                        instruction
+                                                                    }
+                                                                    mode={mode}
+                                                                />
+                                                            </li>
+                                                        )
+                                                    }
+                                                )}
+                                            </ol>
+                                        </div>
+                                    ) : isLoading ? (
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-sm mb-2">
+                                                Fetching Data...
+                                            </span>
+                                            <progress className="progress w-11/12 progress-info"></progress>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-row justify-center">
+                                            <span>Wow Such Empty!!</span>
+                                            <span>
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    strokeWidth={1.5}
+                                                    stroke="currentColor"
+                                                    className="w-6 h-6 ml-2"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z"
+                                                    />
+                                                </svg>
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        )}
                         <div className="collapse mt-2">
                             <input type="checkbox" />
                             <div className="collapse-title text-xl font-medium text-center underline">
@@ -1017,68 +1026,99 @@ export default function MapDrawer() {
                             </div>
                             <div className="collapse-content">
                                 {routePreference == 'all' ? (
-                                    <div>Details of all the routes one-by-one</div>
+                                    <div>
+                                        Details of all the routes one-by-one
+                                    </div>
                                 ) : (
                                     <ul>
                                         <li>Vehicle Profile: {mode}</li>
                                         <li>
                                             Route Preference: {routePreference}
                                         </li>
-                                        
 
-                                        { routePreference == 'shortest'? (
-                                            <li>Distance: {prettyMetric(shortestRoute.distance).humanize()}</li>
-                                        ): (
-                                            routePreference == 'fastest'? (
-                                                <li>Distance: {prettyMetric(fastestRoute.distance).humanize()}</li>
-                                            ) : (
-                                                routePreference == 'leap'? (
-                                                    <li>Distance: {prettyMetric(leapRoute.distance).humanize()}</li>
-                                                ) : (
-                                                    routePreference == 'balanced'? (
-                                                        <li>Distance: {prettyMetric(balancedRoute.distance).humanize()}</li>
-                                                    ):(
-                                                        <li>Distance: {`No Route Selected`}</li>
-                                                    )
-                                                )
-                                            )
+                                        {routePreference == 'shortest' ? (
+                                            <li>
+                                                Distance:{' '}
+                                                {prettyMetric(
+                                                    shortestRoute.distance
+                                                ).humanize()}
+                                            </li>
+                                        ) : routePreference == 'fastest' ? (
+                                            <li>
+                                                Distance:{' '}
+                                                {prettyMetric(
+                                                    fastestRoute.distance
+                                                ).humanize()}
+                                            </li>
+                                        ) : routePreference == 'leap' ? (
+                                            <li>
+                                                Distance:{' '}
+                                                {prettyMetric(
+                                                    leapRoute.distance
+                                                ).humanize()}
+                                            </li>
+                                        ) : routePreference == 'balanced' ? (
+                                            <li>
+                                                Distance:{' '}
+                                                {prettyMetric(
+                                                    balancedRoute.distance
+                                                ).humanize()}
+                                            </li>
+                                        ) : (
+                                            <li>
+                                                Distance: {`No Route Selected`}
+                                            </li>
                                         )}
-                                        { routePreference == 'shortest'? (
-                                            <li>Time Taken: {shortestRoute.time}</li>
-                                        ): (
-                                            routePreference == 'fastest'? (
-                                                <li>Time Taken: {fastestRoute.duration}</li>
-                                            ) : (
-                                                routePreference == 'leap'? (
-                                                    <li>Time Taken: {leapRoute.time}</li>
-                                                ) : (
-                                                    routePreference == 'balanced'? (
-                                                        <li>Time Taken: {balancedRoute.duration}</li>
-                                                    ):(
-                                                        <li>Time Taken: {`No Route Selected`}</li>
-                                                    )
-                                                )
-                                            )
+                                        {routePreference == 'shortest' ? (
+                                            <li>
+                                                Time Taken: {shortestRoute.time}
+                                            </li>
+                                        ) : routePreference == 'fastest' ? (
+                                            <li>
+                                                Time Taken:{' '}
+                                                {fastestRoute.duration}
+                                            </li>
+                                        ) : routePreference == 'leap' ? (
+                                            <li>
+                                                Time Taken: {leapRoute.time}
+                                            </li>
+                                        ) : routePreference == 'balanced' ? (
+                                            <li>
+                                                Time Taken:{' '}
+                                                {balancedRoute.duration}
+                                            </li>
+                                        ) : (
+                                            <li>
+                                                Time Taken:{' '}
+                                                {`No Route Selected`}
+                                            </li>
                                         )}
 
-                                        { routePreference == 'shortest'? (
-                                            <li>Exposure: {shortestRoute.totalExposure}</li>
-                                        ): (
-                                            routePreference == 'fastest'? (
-                                                <li>Exposure: {fastestRoute.totalExposure}</li>
-                                            ) : (
-                                                routePreference == 'leap'? (
-                                                    <li>Exposure: {leapRoute.totalExposure}</li>
-                                                ) : (
-                                                    routePreference == 'balanced'? (
-                                                        <li>Exposure: {balancedRoute.totalExposure}</li>
-                                                    ):(
-                                                        <li>Exposure: {`No Route Selected`}</li>
-                                                    )
-                                                )
-                                            )
+                                        {routePreference == 'shortest' ? (
+                                            <li>
+                                                Exposure:{' '}
+                                                {shortestRoute.totalExposure}
+                                            </li>
+                                        ) : routePreference == 'fastest' ? (
+                                            <li>
+                                                Exposure:{' '}
+                                                {fastestRoute.totalExposure}
+                                            </li>
+                                        ) : routePreference == 'leap' ? (
+                                            <li>
+                                                Exposure:{' '}
+                                                {leapRoute.totalExposure}
+                                            </li>
+                                        ) : routePreference == 'balanced' ? (
+                                            <li>
+                                                Exposure:{' '}
+                                                {balancedRoute.totalExposure}
+                                            </li>
+                                        ) : (
+                                            <li>
+                                                Exposure: {`No Route Selected`}
+                                            </li>
                                         )}
-                                        
                                     </ul>
                                 )}
                             </div>
