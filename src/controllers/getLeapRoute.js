@@ -105,7 +105,7 @@ export default async function getLeapRoute(routes) {
                 ])
                 console.log({ aqiData })
                 totalRouteExposure =
-                    totalRouteExposure + aqiData.data.aqi * routePointTime[i][j]
+                    totalRouteExposure + (aqiData.data.aqi * routePointTime[i][j]/60 * 8 )
                 tempAqiValues.push(aqiData)
                 // await new Promise(r => setTimeout(r, 400));  //sleep for  200 ms to avoid the rate limit of the api
             } catch (e) {

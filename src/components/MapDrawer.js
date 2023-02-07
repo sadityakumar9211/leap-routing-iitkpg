@@ -15,7 +15,7 @@ export default function MapDrawer() {
     // Drawer
     const [isExpanded, setIsExpanded] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
-    const [showColorInfo, setShowColorInfo] = useState(false)
+    const [showColorInfo, setShowColorInfo] = useState(true)
 
     // Form
     const source = useInput('') //custom hook
@@ -1026,8 +1026,115 @@ export default function MapDrawer() {
                             </div>
                             <div className="collapse-content">
                                 {routePreference == 'all' ? (
-                                    <div>
-                                        Details of all the routes one-by-one
+                                    <div className='overflow-auto h-44'>
+                                        <div>
+                                            <div className="font-bold underline">Shortest Route</div>
+                                            <ul className="ml-2">
+                                                <li>
+                                                    Route Preference:{' '}
+                                                    {routePreference}
+                                                </li>
+                                                <li>
+                                                    Distance:{' '}
+                                                    {prettyMetric(
+                                                        shortestRoute.distance
+                                                    ).humanize()}
+                                                </li>
+                                                <li>
+                                                    Time Taken:{' '}
+                                                    {shortestRoute.time &&
+                                                        prettyMilliseconds(
+                                                            shortestRoute.time
+                                                        )}
+                                                </li>
+                                                {/* <li>
+                                                    Total Exposure:{' '}
+                                                    {
+                                                        shortestRoute.totalExposure
+                                                    }
+                                                </li> */}
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <div className="font-bold underline">Fastest Route</div>
+                                            <ul className="ml-2">
+                                                <li>
+                                                    Route Preference:{' '}
+                                                    {routePreference}
+                                                </li>
+                                                <li>
+                                                    Distance:{' '}
+                                                    {prettyMetric(
+                                                        fastestRoute.distance
+                                                    ).humanize()}
+                                                </li>
+                                                <li>
+                                                    Time Taken:{' '}
+                                                    {fastestRoute.time &&
+                                                        prettyMilliseconds(
+                                                            fastestRoute.time
+                                                        )}
+                                                </li>
+                                                {/* <li>
+                                                    Total Exposure:{' '}
+                                                    {fastestRoute.totalExposure}
+                                                </li> */}
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <div className="font-bold underline">LEAP Route</div>
+                                            <ul className="ml-2">
+                                                <li>
+                                                    Route Preference:{' '}
+                                                    {routePreference}
+                                                </li>
+                                                <li>
+                                                    Distance:{' '}
+                                                    {prettyMetric(
+                                                        leapRoute.distance
+                                                    ).humanize()}
+                                                </li>
+                                                <li>
+                                                    Time Taken:{' '}
+                                                    {leapRoute.time &&
+                                                        prettyMilliseconds(
+                                                            leapRoute.time
+                                                        )}
+                                                </li>
+                                                <li>
+                                                    Total Exposure:{' '}
+                                                    {leapRoute.totalExposure}
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <div className="font-bold underline">Balanced Route</div>
+                                            <ul className="ml-2">
+                                                <li>
+                                                    Route Preference:{' '}
+                                                    {routePreference}
+                                                </li>
+                                                <li>
+                                                    Distance:{' '}
+                                                    {prettyMetric(
+                                                        balancedRoute.distance
+                                                    ).humanize()}
+                                                </li>
+                                                <li>
+                                                    Time Taken:{' '}
+                                                    {balancedRoute.time &&
+                                                        prettyMilliseconds(
+                                                            balancedRoute.time
+                                                        )}
+                                                </li>
+                                                <li>
+                                                    Total Exposure:{' '}
+                                                    {
+                                                        balancedRoute.totalExposure
+                                                    }
+                                                </li>
+                                            </ul>
+                                        </div>
                                     </div>
                                 ) : (
                                     <ul>
@@ -1071,21 +1178,37 @@ export default function MapDrawer() {
                                         )}
                                         {routePreference == 'shortest' ? (
                                             <li>
-                                                Time Taken: {shortestRoute.time}
+                                                Time Taken:{' '}
+                                                {shortestRoute.time &&
+                                                    prettyMilliseconds(
+                                                        shortestRoute.time
+                                                    )}
                                             </li>
                                         ) : routePreference == 'fastest' ? (
                                             <li>
                                                 Time Taken:{' '}
-                                                {fastestRoute.duration}
+                                                {fastestRoute.duration &&
+                                                    prettyMilliseconds(
+                                                        fastestRoute.duration *
+                                                            1000
+                                                    )}
                                             </li>
                                         ) : routePreference == 'leap' ? (
                                             <li>
-                                                Time Taken: {leapRoute.time}
+                                                Time Taken:{' '}
+                                                {leapRoute.time &&
+                                                    prettyMilliseconds(
+                                                        leapRoute.time
+                                                    )}
                                             </li>
                                         ) : routePreference == 'balanced' ? (
                                             <li>
                                                 Time Taken:{' '}
-                                                {balancedRoute.duration}
+                                                {balancedRoute.duration &&
+                                                    prettyMilliseconds(
+                                                        balancedRoute.duration *
+                                                            1000
+                                                    )}
                                             </li>
                                         ) : (
                                             <li>
@@ -1095,15 +1218,15 @@ export default function MapDrawer() {
                                         )}
 
                                         {routePreference == 'shortest' ? (
-                                            <li>
+                                            {/* <li>
                                                 Exposure:{' '}
                                                 {shortestRoute.totalExposure}
-                                            </li>
+                                            </li> */}
                                         ) : routePreference == 'fastest' ? (
-                                            <li>
+                                            {/* <li>
                                                 Exposure:{' '}
                                                 {fastestRoute.totalExposure}
-                                            </li>
+                                            </li> */}
                                         ) : routePreference == 'leap' ? (
                                             <li>
                                                 Exposure:{' '}

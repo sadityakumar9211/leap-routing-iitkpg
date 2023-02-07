@@ -2,19 +2,14 @@ import getLeapRoute from './getLeapRoute'
 import fetchAqiData from '../services/fetchAqiData'
 
 export default async function getBalancedRoute(routes, mode) {
-    if (
-        mode == 'scooter' ||
-        mode == 'foot' ||
-        mode == 'bike'
-    ) {
+    if (mode == 'scooter' || mode == 'foot' || mode == 'bike') {
         // sort the routes based on time
-        if (routes.length == 1){
-            return (getLeapRoute([routes[0]]))
+        if (routes.length == 1) {
+            return getLeapRoute([routes[0]])
         }
         routes.sort((a, b) => a.time - b.time)
-        return (getLeapRoute([routes[0], routes[1]])) //comparing the exposure of the fastest two routes for balanced routes in this case.
+        return getLeapRoute([routes[0], routes[1]]) //comparing the exposure of the fastest two routes for balanced routes in this case.
     }
-
 
     // This will run only if the temp_mode is containing 'traffic'
 
@@ -113,7 +108,8 @@ export default async function getBalancedRoute(routes, mode) {
                 ])
                 console.log(aqiData)
                 totalRouteExposure =
-                    totalRouteExposure + aqiData.data.aqi * routePointTime[i][j]
+                    totalRouteExposure +
+                    ((aqiData.data.aqi * routePointTime[i][j]) / 60) * 8
                 tempAqiValues.push(aqiData)
                 // await new Promise(r => setTimeout(r, 400));  //sleep for  200 ms to avoid the rate limit of the api
             } catch (e) {
