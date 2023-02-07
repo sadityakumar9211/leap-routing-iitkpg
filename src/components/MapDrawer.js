@@ -1047,12 +1047,7 @@ export default function MapDrawer() {
                                                             shortestRoute.time
                                                         )}
                                                 </li>
-                                                {/* <li>
-                                                    Total Exposure:{' '}
-                                                    {
-                                                        shortestRoute.totalExposure
-                                                    }
-                                                </li> */}
+                                                
                                             </ul>
                                         </div>
                                         <div>
@@ -1070,15 +1065,12 @@ export default function MapDrawer() {
                                                 </li>
                                                 <li>
                                                     Time Taken:{' '}
-                                                    {fastestRoute.time &&
+                                                    {fastestRoute.duration &&
                                                         prettyMilliseconds(
-                                                            fastestRoute.time
+                                                            fastestRoute.duration * 1000
                                                         )}
                                                 </li>
-                                                {/* <li>
-                                                    Total Exposure:{' '}
-                                                    {fastestRoute.totalExposure}
-                                                </li> */}
+                                                
                                             </ul>
                                         </div>
                                         <div>
@@ -1217,17 +1209,7 @@ export default function MapDrawer() {
                                             </li>
                                         )}
 
-                                        {routePreference == 'shortest' ? (
-                                            {/* <li>
-                                                Exposure:{' '}
-                                                {shortestRoute.totalExposure}
-                                            </li> */}
-                                        ) : routePreference == 'fastest' ? (
-                                            {/* <li>
-                                                Exposure:{' '}
-                                                {fastestRoute.totalExposure}
-                                            </li> */}
-                                        ) : routePreference == 'leap' ? (
+                                        {routePreference == 'leap' ? (
                                             <li>
                                                 Exposure:{' '}
                                                 {leapRoute.totalExposure}
