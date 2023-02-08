@@ -861,9 +861,6 @@ export default function MapDrawer() {
                                     <option value="leap">
                                         LEAP (exposure)
                                     </option>
-                                    <option value="safest" disabled>
-                                        Safe (Crime)
-                                    </option>
                                     <option value="emission" disabled>
                                         Least Carbon Emission(CO<sub>2</sub>)
                                     </option>
