@@ -1,4 +1,7 @@
-export default function getFastestRoute(routes, mode) {
+import calculateRouteExposureMapbox from '../utils/calculateRouteExposureMapbox.js' 
+import calculateRouteExposureGraphhopper from '../utils/calculateRouteExposureGraphhopper.js'
+
+export default async function getFastestRoute(routes, mode) {
     const geojson = {
         type: 'Feature',
         properties: {},
@@ -14,10 +17,13 @@ export default function getFastestRoute(routes, mode) {
             return a.time - a.time
         }
     })
+    
 
     if (mode === 'driving-traffic' || mode === 'truck-traffic') {
+        routes[0] = await calculateRouteExposureMapbox(routes[0])
         geojson.geometry.coordinates = routes[0].geometry.coordinates
     } else {
+        routes[0] = await calculateRouteExposureGraphhopper(routes[0])
         geojson.geometry.coordinates = routes[0].points.coordinates
     }
 
