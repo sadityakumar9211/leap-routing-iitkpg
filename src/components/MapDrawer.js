@@ -8,6 +8,7 @@ import getShortestRoute from '../controllers/getShortestRoute.js'
 import getFastestRoute from '../controllers/getFastestRoute.js'
 import getLeapRoute from '../controllers/getLeapRoute.js'
 import getBalancedRoute from '../controllers/getBalancedRoute.js'
+import getLeastCarbonRoute from '../controllers/getLeastCarbonRoute.js'
 const prettyMetric = require('pretty-metric')
 const mapboxgl = require('mapbox-gl/dist/mapbox-gl.js')
 
@@ -31,6 +32,7 @@ export default function MapDrawer() {
     const [fastestRoute, setFastestRoute] = useState({})
     const [leapRoute, setLeapRoute] = useState({})
     const [balancedRoute, setBalancedRoute] = useState({})
+    const [leastCarbonRoute, setLeastCarbonRoute] = useState({})
 
     // Map
     // Initial Location
@@ -237,7 +239,7 @@ export default function MapDrawer() {
             { method: 'GET' }
         )
         const json = await query.json()
-        const routes = json.paths // Two routes
+        const routes = json.paths
         return routes
     }
 
@@ -365,6 +367,35 @@ export default function MapDrawer() {
             setBalancedRoute(routes[0])
             setIsLoading(false)
         }
+
+        // Least Carbon Emission Route
+        //display the least carbon emission route in the given mode
+        console.log('Least Carbon Emission Path...')
+        temp_routePreference = 'emission'
+
+        if (temp_mode == 'truck-traffic') temp_mode = 'truck'
+        else if (temp_mode == 'driving-traffic') temp_mode = 'car'
+
+        routes = await getGraphhopperRoutes(temp_mode)
+        console.log('The graphhopper routes is, ', { routes })
+        ;({ geojson, routes } = await getLeastCarbonRoute(
+            source,
+            destination,
+            temp_mode
+        ))
+
+        routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route-all`
+        if (window.$map.getSource(routeId)) {
+            console.log('changing the route source data...')
+            setLeastCarbonRoute(routes[0])
+            window.$map.getSource(routeId).setData(geojson)
+        } else {
+            console.log('displaying a new route...')
+            console.log({ geojson })
+            console.log({ routes })
+            setLeastCarbonRoute(routes[0])
+            displayRoute(geojson, start, end, routeId, 'emission')
+        }
     }
 
     // Fetches the route and displays it in the map
@@ -417,6 +448,11 @@ export default function MapDrawer() {
                         } else if (temp_mode == 'car') {
                             setMode('driving-traffic')
                             temp_mode = 'driving-traffic'
+                        }
+                    } else if (temp_routePreference == 'emission') {
+                        if (temp_mode == 'driving-traffic') {
+                            setMode('car')
+                            temp_mode = 'car'
                         }
                     }
                 }
@@ -630,6 +666,54 @@ export default function MapDrawer() {
                         }
                         console.log('Balanced Route displayed...')
                         break
+
+                    case 'emission':
+                        console.log('Emission Path...')
+                        ;({ geojson, routes } = await getLeastCarbonRoute(
+                            source,
+                            destination,
+                            temp_mode
+                        ))
+
+                        setDistance(routes[0].distance)
+
+                        if (temp_mode.includes('traffic')) {
+                            setTime(routes[0].duration)
+                            setInstructions(routes[0].legs[0].steps)
+                        } else {
+                            setTime(routes[0].time)
+                            setInstructions(routes[0].instructions)
+                        }
+
+                        //removing all the other routes
+                        layers = window.$map.getStyle().layers
+                        console.log({ layers })
+                        for (let i = 0; i < layers.length; i++) {
+                            if (layers[i].id.includes('-route')) {
+                                window.$map.removeLayer(layers[i].id)
+                                window.$map.removeSource(layers[i].id)
+                            }
+                        }
+
+                        routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route`
+                        //if same route is present - then we modify its source
+                        if (window.$map.getSource(routeId)) {
+                            window.$map.getSource(routeId).setData(geojson)
+                            setLeastCarbonRoute(routes[0])
+                            setIsLoading(false)
+                        } else {
+                            displayRoute(
+                                geojson,
+                                start,
+                                end,
+                                routeId,
+                                'emission'
+                            )
+                            setLeastCarbonRoute(routes[0])
+                            setIsLoading(false)
+                        }
+                        console.log('Least Carbon Emission Route displayed...')
+                        break
                 }
             } catch (e) {
                 setIsLoading(false)
@@ -830,7 +914,7 @@ export default function MapDrawer() {
                                 }}
                             >
                                 <option disabled value="none" selected>
-                                    Select Mode of Transport
+                                    -- Select Mode of Transport --
                                 </option>
                                 <option value="driving-traffic">Car</option>
                                 <option value="truck">Bus</option>
@@ -862,7 +946,7 @@ export default function MapDrawer() {
                                     <option value="leap">
                                         LEAP (exposure)
                                     </option>
-                                    <option value="emission" disabled>
+                                    <option value="emission">
                                         Least Carbon Emission(CO<sub>2</sub>)
                                     </option>
                                     <option value="balanced">
@@ -892,21 +976,25 @@ export default function MapDrawer() {
                                 </div>
                             </div>
                             <div className={showColorInfo ? 'block' : 'hidden'}>
-                                <div className="flex flex-row space-x-6 items-center">
+                                <div className="flex flex-row space-x-3 items-center">
                                     <div className="flex flex-col justify-center items-center">
-                                        <div className="w-6 h-6 bg-shortest rounded-full"></div>
+                                        <div className="w-5 h-5 bg-shortest rounded-full"></div>
                                         <div className="text-xs">Shortest</div>
                                     </div>
                                     <div className="flex flex-col justify-center items-center">
-                                        <div className="w-6 h-6 bg-fastest rounded-full"></div>
+                                        <div className="w-5 h-5 bg-fastest rounded-full"></div>
                                         <div className="text-xs">Fastest</div>
                                     </div>
                                     <div className="flex flex-col justify-center items-center">
-                                        <div className="w-6 h-6 bg-leap rounded-full"></div>
+                                        <div className="w-5 h-5 bg-leap rounded-full"></div>
                                         <div className="text-xs">LEAP</div>
                                     </div>
                                     <div className="flex flex-col justify-center items-center">
-                                        <div className="w-6 h-6 bg-balanced rounded-full"></div>
+                                        <div className="w-5 h-5 bg-emission rounded-full"></div>
+                                        <div className="text-xs">EMISSION</div>
+                                    </div>
+                                    <div className="flex flex-col justify-center items-center">
+                                        <div className="w-5 h-5 bg-balanced rounded-full"></div>
                                         <div className="text-xs">Optimal</div>
                                     </div>
                                 </div>
@@ -1116,9 +1204,49 @@ export default function MapDrawer() {
                                                 </li>
                                             </ul>
                                         </div>
+
                                         <div>
                                             <div className="font-bold underline">
-                                                Balanced Route
+                                                Least Carbon Emission Route
+                                            </div>
+                                            <ul className="ml-2">
+                                                <li>
+                                                    Route Preference:{' '}
+                                                    {routePreference}
+                                                </li>
+                                                <li>
+                                                    Distance:{' '}
+                                                    {prettyMetric(
+                                                        leastCarbonRoute.distance
+                                                    ).humanize()}
+                                                </li>
+                                                <li>
+                                                    Time Taken:{' '}
+                                                    {leastCarbonRoute.time &&
+                                                        prettyMilliseconds(
+                                                            leapRoute.time ?? 1
+                                                        )}
+                                                </li>
+                                                <li>
+                                                    Total Exposure:{' '}
+                                                    {leastCarbonRoute.totalExposure?.toFixed(
+                                                        2
+                                                    )}
+                                                </li>
+                                                <li>
+                                                    Energy Required:{' '}
+                                                    {(
+                                                        leastCarbonRoute.totalEnergy /
+                                                        1000
+                                                    )?.toFixed(2)}{' '}
+                                                    kJ
+                                                </li>
+                                            </ul>
+                                        </div>
+
+                                        <div>
+                                            <div className="font-bold underline">
+                                                Optimal Route
                                             </div>
                                             <ul className="ml-2">
                                                 <li>
@@ -1133,9 +1261,12 @@ export default function MapDrawer() {
                                                 </li>
                                                 <li>
                                                     Time Taken:{' '}
-                                                    {(balancedRoute.time ?? balancedRoute.duration)&&
+                                                    {(balancedRoute.time ??
+                                                        balancedRoute.duration) &&
                                                         prettyMilliseconds(
-                                                            balancedRoute.time ?? balancedRoute.duration * 1000
+                                                            balancedRoute.time ??
+                                                                balancedRoute.duration *
+                                                                    1000
                                                         )}
                                                 </li>
                                                 <li>
@@ -1173,6 +1304,13 @@ export default function MapDrawer() {
                                                 Distance:{' '}
                                                 {prettyMetric(
                                                     leapRoute.distance
+                                                ).humanize()}
+                                            </li>
+                                        ) : routePreference == 'emission' ? (
+                                            <li>
+                                                Distance:{' '}
+                                                {prettyMetric(
+                                                    leastCarbonRoute.distance
                                                 ).humanize()}
                                             </li>
                                         ) : routePreference == 'balanced' ? (
@@ -1214,10 +1352,21 @@ export default function MapDrawer() {
                                                                 1000
                                                     )}
                                             </li>
+                                        ) : routePreference == 'emission' ? (
+                                            <li>
+                                                Time Taken:{' '}
+                                                {leastCarbonRoute.time &&
+                                                    prettyMilliseconds(
+                                                        leastCarbonRoute.time ??
+                                                            leastCarbonRoute.duration *
+                                                                1000
+                                                    )}
+                                            </li>
                                         ) : routePreference == 'balanced' ? (
                                             <li>
                                                 Time Taken:{' '}
-                                                {(balancedRoute.duration ?? balancedRoute.time) &&
+                                                {(balancedRoute.duration ??
+                                                    balancedRoute.time) &&
                                                     prettyMilliseconds(
                                                         balancedRoute.duration *
                                                             1000 ??
@@ -1251,9 +1400,25 @@ export default function MapDrawer() {
                                                 Exposure:{' '}
                                                 {fastestRoute.totalExposure}
                                             </li>
+                                        ) : routePreference == 'emission' ? (
+                                            <li>
+                                                Exposure:{' '}
+                                                {leastCarbonRoute.totalExposure}
+                                            </li>
                                         ) : (
                                             <li>
                                                 Exposure: {`No Route Selected`}
+                                            </li>
+                                        )}
+
+                                        {routePreference == 'emission' && (
+                                            <li>
+                                                Energy Required:{' '}
+                                                {(
+                                                    leastCarbonRoute.totalEnergy /
+                                                    1000
+                                                ).toFixed(2)}{' '}
+                                                kJ
                                             </li>
                                         )}
                                     </ul>
