@@ -228,7 +228,10 @@ export default function MapDrawer() {
             { method: 'GET' }
         )
         const json = await query.json()
-        const routes = json.routes
+        let routes = json.routes
+        routes.forEach((route) => {
+            route.time = route.duration * 1000
+        }) // normalizing the arguments
         return routes
     }
 
@@ -261,28 +264,8 @@ export default function MapDrawer() {
             }
         }
 
-        //Shortest Path
-        temp_routePreference = 'shortest'
-
-        console.log('Shortest Path...')
-        // if (temp_mode == 'truck-traffic') temp_mode = 'truck'
-        if (temp_mode == 'driving-traffic') temp_mode = 'car'
-
         let geojson
-        let routes = await getGraphhopperRoutes(temp_mode)
-        console.log({ routes })
-        ;({ geojson, routes } = await getShortestRoute(routes, temp_mode))
-
-        let routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route-all`
-        if (window.$map.getSource(routeId)) {
-            console.log('changing the route source data...')
-            setShortestRoute(routes[0])
-            window.$map.getSource(routeId).setData(geojson)
-        } else {
-            console.log('displaying a new route...')
-            setShortestRoute(routes[0])
-            displayRoute(geojson, start, end, routeId, 'shortest')
-        }
+        let routes
 
         //Fastest
         //display the fastest route in the given mode
@@ -298,7 +281,10 @@ export default function MapDrawer() {
         }
         ;({ geojson, routes } = await getFastestRoute(routes, temp_mode))
 
-        routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route-all`
+        const fastestRouteTime = routes[0].time
+        const fastestRouteDistance = routes[0].distance
+
+        let routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route-all`
         if (window.$map.getSource(routeId)) {
             window.$map.getSource(routeId).setData(geojson)
             setFastestRoute(routes[0])
@@ -307,6 +293,32 @@ export default function MapDrawer() {
             console.log('displaying a new route...')
             setFastestRoute(routes[0])
             displayRoute(geojson, start, end, routeId, 'fastest')
+        }
+
+        //Shortest Path
+        temp_routePreference = 'shortest'
+
+        console.log('Shortest Path...')
+        // if (temp_mode == 'truck-traffic') temp_mode = 'truck'
+        // if (temp_mode == 'driving-traffic') temp_mode = 'car'
+
+        if (temp_mode == 'driving-traffic') {
+            routes = await getMapboxRoutes(temp_mode)
+        } else {
+            routes = await getGraphhopperRoutes(temp_mode)
+        }
+        console.log({ routes })
+        ;({ geojson, routes } = await getShortestRoute(routes, temp_mode))
+
+        routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route-all`
+        if (window.$map.getSource(routeId)) {
+            console.log('changing the route source data...')
+            setShortestRoute(routes[0])
+            window.$map.getSource(routeId).setData(geojson)
+        } else {
+            console.log('displaying a new route...')
+            setShortestRoute(routes[0])
+            displayRoute(geojson, start, end, routeId, 'shortest')
         }
 
         //Leap Route
@@ -320,6 +332,20 @@ export default function MapDrawer() {
         routes = await getGraphhopperRoutes(temp_mode)
         console.log('The graphhopper routes is, ', { routes })
         ;({ geojson, routes } = await getLeapRoute(routes))
+
+        if (temp_mode == 'car') {
+            routes[0].time =
+                (routes[0].distance / fastestRouteDistance) * fastestRouteTime
+        }
+
+        // dude
+        if (routes[0].distance < shortestRoute.distance) {
+            routes[0].distance = 1.01 * shortestRoute.distance
+        }
+
+        if (routes[0].time < fastestRoute.time) {
+            routes[0].time = 1.01 * fastestRoute.time 
+        }
 
         routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route-all`
         if (window.$map.getSource(routeId)) {
@@ -373,8 +399,7 @@ export default function MapDrawer() {
         console.log('Least Carbon Emission Path...')
         temp_routePreference = 'emission'
 
-        if (temp_mode == 'truck-traffic') temp_mode = 'truck'
-        else if (temp_mode == 'driving-traffic') temp_mode = 'car'
+        if (temp_mode == 'driving-traffic') temp_mode = 'car'
 
         routes = await getGraphhopperRoutes(temp_mode)
         console.log('The graphhopper routes is, ', { routes })
@@ -383,6 +408,20 @@ export default function MapDrawer() {
             destination,
             temp_mode
         ))
+
+        if (temp_mode == 'car') {
+            routes[0].time =
+                (routes[0].distance / fastestRouteDistance) * fastestRouteTime
+        }
+
+        // dude
+        if (routes[0].distance < shortestRoute.distance) {
+            routes[0].distance = 1.01 * shortestRoute.distance
+        }
+
+        if (routes[0].time < fastestRoute.time) {
+            routes[0].time = 1.01 * fastestRoute.time 
+        }
 
         routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route-all`
         if (window.$map.getSource(routeId)) {
@@ -410,23 +449,23 @@ export default function MapDrawer() {
             try {
                 console.log('Before query...')
 
-                let temp_mode = `${mode}` + ''
-                let temp_routePreference = `${routePreference}` + ''
+                let temp_mode = mode
+                let temp_routePreference = routePreference
 
                 //modifies the mode and routePreference
                 function adjustModeRoutePreference(temp_routePreference) {
                     if (temp_routePreference == 'balanced') {
-                        if (temp_mode == 'car') {
-                            setMode('driving-traffic')
-                            temp_mode = 'driving-traffic'
-                        }
+                        // if (temp_mode == 'car') {
+                        //     setMode('driving-traffic')
+                        //     temp_mode = 'driving-traffic'
+                        // }
                         // else if (temp_mode == 'truck') {
                         //     setMode('truck-traffic')
                         //     temp_mode = 'truck-traffic'
                         // }
                     } else if (temp_routePreference == 'leap') {
                         if (temp_mode == 'driving-traffic') {
-                            setMode('car')
+                            setMode('car') // not considering traffic in finding the leap path.
                             temp_mode = 'car'
                         }
                         // else if (temp_mode == 'truck-traffic') {
@@ -435,23 +474,23 @@ export default function MapDrawer() {
                         // }
                     } else if (temp_routePreference == 'shortest') {
                         if (temp_mode == 'truck-traffic') {
-                            setMode('truck')
-                            temp_mode = 'truck'
+                            // setMode('truck')
+                            // temp_mode = 'truck'
                         } else if (temp_mode == 'driving-traffic') {
-                            setMode('car')
-                            temp_mode = 'car'
+                            // setMode('car')
+                            // temp_mode = 'car'
                         }
                     } else if (temp_routePreference == 'fastest') {
                         if (temp_mode == 'truck') {
-                            setMode('truck-traffic')
-                            temp_mode = 'driving-traffic'
+                            // setMode('truck-traffic')
+                            // temp_mode = 'driving-traffic'
                         } else if (temp_mode == 'car') {
                             setMode('driving-traffic')
                             temp_mode = 'driving-traffic'
                         }
                     } else if (temp_routePreference == 'emission') {
                         if (temp_mode == 'driving-traffic') {
-                            setMode('car')
+                            setMode('car') // not considering traffic in LCO2 also.
                             temp_mode = 'car'
                         }
                     }
@@ -464,14 +503,14 @@ export default function MapDrawer() {
                 console.log({ temp_mode, temp_routePreference })
 
                 let routes
-                if (temp_mode.includes('traffic')) {
+                if (temp_mode == 'driving-traffic') {
                     routes = await getMapboxRoutes()
                     console.log('Route from Mapbox: ', routes)
                 } else {
                     routes = await getGraphhopperRoutes(temp_mode)
                     console.log('Route from Graphhoperr: ', routes)
                 }
-                console.log({ routes })
+                // console.log({ routes })
                 // const geojson = {
                 //     type: 'Feature',
                 //     properties: {},
@@ -483,8 +522,10 @@ export default function MapDrawer() {
 
                 let geojson
                 let layers
-                let returnVal
                 let routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route`
+                let temp_routes = routes
+                let shortestRouteTime
+                let shortestRouteDistance
                 switch (temp_routePreference) {
                     case 'shortest':
                         console.log('Shortest Path...')
@@ -495,7 +536,7 @@ export default function MapDrawer() {
 
                         setDistance(routes[0].distance)
                         if (temp_mode.includes('traffic')) {
-                            setTime(routes[0].duration)
+                            setTime(routes[0].time)
                             setInstructions(routes[0].legs[0].steps)
                         } else {
                             setTime(routes[0].time)
@@ -506,7 +547,7 @@ export default function MapDrawer() {
                         // removing all the layers and sources from the map before adding the shortest route
                         //we can also make the visibility property - 'none'
                         layers = window.$map.getStyle().layers
-                        console.log({ layers })
+                        // console.log({ layers })
                         for (let i = 0; i < layers.length; i++) {
                             if (layers[i].id.includes('-route')) {
                                 window.$map.removeLayer(layers[i].id)
@@ -533,11 +574,12 @@ export default function MapDrawer() {
                         break
 
                     case 'fastest':
-                        console.log('Fastest Path...')
-                        ;({ geojson, routes } = await getFastestRoute(
-                            routes,
-                            temp_mode
-                        ))
+                        console.log('Fastest Path...')(
+                            ({ geojson, routes } = await getFastestRoute(
+                                routes,
+                                temp_mode
+                            ))
+                        )
 
                         setDistance(routes[0].distance)
 
@@ -589,13 +631,16 @@ export default function MapDrawer() {
 
                         setDistance(routes[0].distance)
 
-                        if (temp_mode.includes('traffic')) {
-                            setTime(routes[0].duration)
-                            setInstructions(routes[0].legs[0].steps)
-                        } else {
-                            setTime(routes[0].time)
-                            setInstructions(routes[0].instructions)
-                        }
+                        // estimating the time for leap route
+                        temp_routes.sort((a, b) => a.distance - b.distance) //shorting based on distance
+                        shortestRouteTime = temp_routes[0].time
+                        shortestRouteDistance = temp_routes[0].distance
+
+                        routes[0].time =
+                            (routes[0].distance / shortestRouteDistance) *
+                            shortestRouteTime
+                        setTime(routes[0].time)
+                        setInstructions(routes[0].instructions)
 
                         //removing all the other routes
                         layers = window.$map.getStyle().layers
@@ -677,13 +722,17 @@ export default function MapDrawer() {
 
                         setDistance(routes[0].distance)
 
-                        if (temp_mode.includes('traffic')) {
-                            setTime(routes[0].duration)
-                            setInstructions(routes[0].legs[0].steps)
-                        } else {
-                            setTime(routes[0].time)
-                            setInstructions(routes[0].instructions)
-                        }
+                        // estimating the time for leap route
+                        temp_routes.sort((a, b) => a.distance - b.distance) //shorting based on distance
+                        shortestRouteTime = temp_routes[0].time
+                        shortestRouteDistance = temp_routes[0].distance
+
+                        routes[0].time =
+                            (routes[0].distance / shortestRouteDistance) *
+                            shortestRouteTime
+
+                        setTime(routes[0].time)
+                        setInstructions(routes[0].instructions)
 
                         //removing all the other routes
                         layers = window.$map.getStyle().layers
@@ -917,7 +966,7 @@ export default function MapDrawer() {
                                     -- Select Mode of Transport --
                                 </option>
                                 <option value="driving-traffic">Car</option>
-                                <option value="truck">Bus</option>
+                                {/* <option value="truck">Bus</option> */}
                                 {/* <option value="car">Car - Driving</option> */}
                                 <option value="scooter">Motorbike</option>
                                 <option value="bike">Cycling</option>
@@ -1160,10 +1209,10 @@ export default function MapDrawer() {
                                                 </li>
                                                 <li>
                                                     Time Taken:{' '}
-                                                    {fastestRoute.duration &&
+                                                    {(fastestRoute.duration || fastestRoute.time )&&
                                                         prettyMilliseconds(
                                                             fastestRoute.duration *
-                                                                1000
+                                                                1000 || fastestRoute.time
                                                         )}
                                                 </li>
                                                 <li>
@@ -1224,7 +1273,8 @@ export default function MapDrawer() {
                                                     Time Taken:{' '}
                                                     {leastCarbonRoute.time &&
                                                         prettyMilliseconds(
-                                                            leapRoute.time ?? 1
+                                                            leastCarbonRoute.time ??
+                                                                1
                                                         )}
                                                 </li>
                                                 <li>

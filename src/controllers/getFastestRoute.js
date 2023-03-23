@@ -11,7 +11,7 @@ export default async function getFastestRoute(routes, mode) {
         },
     }
     routes.sort((a, b) => {
-        if (mode == 'driving-traffic' || mode == 'truck-traffic') {
+        if (mode == 'driving-traffic' /* || mode == 'truck-traffic' */ ) {
             return a.duration - b.duration
         } else {
             return a.time - a.time
@@ -19,7 +19,7 @@ export default async function getFastestRoute(routes, mode) {
     })
     
 
-    if (mode === 'driving-traffic' || mode === 'truck-traffic') {
+    if (mode === 'driving-traffic' /* || mode == 'truck-traffic' */ ) {
         routes[0] = await calculateRouteExposureMapbox(routes[0])
         geojson.geometry.coordinates = routes[0].geometry.coordinates
     } else {
