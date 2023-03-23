@@ -1188,7 +1188,7 @@ export default function MapDrawer() {
                                                     Total Exposure:{' '}
                                                     {shortestRoute.totalExposure?.toFixed(
                                                         2
-                                                    )}
+                                                    )} µg/㎥
                                                 </li>
                                             </ul>
                                         </div>
@@ -1219,7 +1219,7 @@ export default function MapDrawer() {
                                                     Total Exposure:{' '}
                                                     {fastestRoute.totalExposure?.toFixed(
                                                         2
-                                                    )}
+                                                    )} µg/㎥
                                                 </li>
                                             </ul>
                                         </div>
@@ -1249,7 +1249,7 @@ export default function MapDrawer() {
                                                     Total Exposure:{' '}
                                                     {leapRoute.totalExposure?.toFixed(
                                                         2
-                                                    )}
+                                                    )} µg/㎥
                                                 </li>
                                             </ul>
                                         </div>
@@ -1281,7 +1281,7 @@ export default function MapDrawer() {
                                                     Total Exposure:{' '}
                                                     {leastCarbonRoute.totalExposure?.toFixed(
                                                         2
-                                                    )}
+                                                    )} µg/㎥
                                                 </li>
                                                 <li>
                                                     Energy Required:{' '}
@@ -1323,7 +1323,7 @@ export default function MapDrawer() {
                                                     Total Exposure:{' '}
                                                     {balancedRoute.totalExposure?.toFixed(
                                                         2
-                                                    )}
+                                                    )} µg/㎥
                                                 </li>
                                             </ul>
                                         </div>
@@ -1433,31 +1433,31 @@ export default function MapDrawer() {
                                         {routePreference == 'leap' ? (
                                             <li>
                                                 Exposure:{' '}
-                                                {leapRoute.totalExposure}
+                                                {leapRoute.totalExposure} µg/㎥
                                             </li>
                                         ) : routePreference == 'balanced' ? (
                                             <li>
                                                 Exposure:{' '}
-                                                {balancedRoute.totalExposure}
+                                                {balancedRoute.totalExposure} µg/㎥
                                             </li>
                                         ) : routePreference == 'shortest' ? (
                                             <li>
                                                 Exposure:{' '}
-                                                {shortestRoute.totalExposure}
+                                                {shortestRoute.totalExposure} µg/㎥
                                             </li>
                                         ) : routePreference == 'fastest' ? (
                                             <li>
                                                 Exposure:{' '}
-                                                {fastestRoute.totalExposure}
+                                                {fastestRoute.totalExposure} µg/㎥
                                             </li>
                                         ) : routePreference == 'emission' ? (
                                             <li>
                                                 Exposure:{' '}
-                                                {leastCarbonRoute.totalExposure}
+                                                {leastCarbonRoute.totalExposure} µg/㎥
                                             </li>
                                         ) : (
                                             <li>
-                                                Exposure: {`No Route Selected`}
+                                                Exposure: {`No Route Selected`} µg/㎥
                                             </li>
                                         )}
 
