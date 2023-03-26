@@ -25,6 +25,7 @@ export default function MapDrawer() {
     const [routePreference, setRoutePreference] = useState('shortest')
     const [distance, setDistance] = useState(0)
     const [time, setTime] = useState(0)
+    const [exposure, setExposure] = useState(0)
     const [instructions, setInstructions] = useState([])
 
     // Type of Routes
@@ -344,7 +345,7 @@ export default function MapDrawer() {
         }
 
         if (routes[0].time < fastestRoute.time) {
-            routes[0].time = 1.01 * fastestRoute.time 
+            routes[0].time = 1.01 * fastestRoute.time
         }
 
         routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route-all`
@@ -420,7 +421,7 @@ export default function MapDrawer() {
         }
 
         if (routes[0].time < fastestRoute.time) {
-            routes[0].time = 1.01 * fastestRoute.time 
+            routes[0].time = 1.01 * fastestRoute.time
         }
 
         routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route-all`
@@ -490,7 +491,7 @@ export default function MapDrawer() {
                         }
                     } else if (temp_routePreference == 'emission') {
                         if (temp_mode == 'driving-traffic') {
-                            setMode('car') // not considering traffic in LCO2 also.
+                            setMode('car') // not considering traffic in LPER also.
                             temp_mode = 'car'
                         }
                     }
@@ -554,6 +555,7 @@ export default function MapDrawer() {
                                 window.$map.removeSource(layers[i].id)
                             }
                         }
+                        setExposure(routes[0].totalExposure)
                         routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route`
                         if (window.$map.getSource(routeId)) {
                             window.$map.getSource(routeId).setData(geojson)
@@ -590,7 +592,7 @@ export default function MapDrawer() {
                             setTime(routes[0].time)
                             setInstructions(routes[0].instructions)
                         }
-
+                        setExposure(routes[0].totalExposure)
                         //removing all the routes from map
                         layers = window.$map.getStyle().layers
                         for (let i = 0; i < layers.length; i++) {
@@ -651,7 +653,7 @@ export default function MapDrawer() {
                                 window.$map.removeSource(layers[i].id)
                             }
                         }
-
+                        setExposure(routes[0].totalExposure)
                         routeId = `${temp_mode}-${temp_routePreference}-${start.position[0]}-${start.position[1]}-${end.position[0]}-${end.position[1]}-route`
                         //if same route is present - then we modify its source
                         if (window.$map.getSource(routeId)) {
@@ -682,7 +684,7 @@ export default function MapDrawer() {
                             setTime(routes[0].time)
                             setInstructions(routes[0].instructions)
                         }
-
+                        setExposure(routes[0].totalExposure)
                         //removing all the other routes
                         layers = window.$map.getStyle().layers
                         console.log({ layers })
@@ -733,7 +735,7 @@ export default function MapDrawer() {
 
                         setTime(routes[0].time)
                         setInstructions(routes[0].instructions)
-
+                        setExposure(routes[0].totalExposure)
                         //removing all the other routes
                         layers = window.$map.getStyle().layers
                         console.log({ layers })
@@ -996,7 +998,7 @@ export default function MapDrawer() {
                                         LEAP (exposure)
                                     </option>
                                     <option value="emission">
-                                        Least Carbon Emission(CO<sub>2</sub>)
+                                        LPER (emission)
                                     </option>
                                     <option value="balanced">
                                         Optimal (recommended)
@@ -1086,10 +1088,16 @@ export default function MapDrawer() {
                                         : prettyMilliseconds(time)}{' '}
                                 </span>
                                 <span className="text-white">|</span>{' '}
-                                <span className="text-orange-500">
+                                <span className="text-blue-500">
                                     {isLoading
                                         ? prettyMetric(0).humanize()
                                         : prettyMetric(distance).humanize()}
+                                </span>
+                                <span className="text-white">|</span>{' '}
+                                <span className="text-red-500">
+                                    {isLoading
+                                        ? prettyMetric(0).humanize()
+                                        : prettyMetric(exposure).humanize()}
                                 </span>
                             </div>
                         )}
@@ -1188,7 +1196,8 @@ export default function MapDrawer() {
                                                     Total Exposure:{' '}
                                                     {shortestRoute.totalExposure?.toFixed(
                                                         2
-                                                    )} µg/㎥
+                                                    )}{' '}
+                                                    µg/㎥
                                                 </li>
                                             </ul>
                                         </div>
@@ -1209,17 +1218,20 @@ export default function MapDrawer() {
                                                 </li>
                                                 <li>
                                                     Time Taken:{' '}
-                                                    {(fastestRoute.duration || fastestRoute.time )&&
+                                                    {(fastestRoute.duration ||
+                                                        fastestRoute.time) &&
                                                         prettyMilliseconds(
                                                             fastestRoute.duration *
-                                                                1000 || fastestRoute.time
+                                                                1000 ||
+                                                                fastestRoute.time
                                                         )}
                                                 </li>
                                                 <li>
                                                     Total Exposure:{' '}
                                                     {fastestRoute.totalExposure?.toFixed(
                                                         2
-                                                    )} µg/㎥
+                                                    )}{' '}
+                                                    µg/㎥
                                                 </li>
                                             </ul>
                                         </div>
@@ -1249,14 +1261,15 @@ export default function MapDrawer() {
                                                     Total Exposure:{' '}
                                                     {leapRoute.totalExposure?.toFixed(
                                                         2
-                                                    )} µg/㎥
+                                                    )}{' '}
+                                                    µg/㎥
                                                 </li>
                                             </ul>
                                         </div>
 
                                         <div>
                                             <div className="font-bold underline">
-                                                Least Carbon Emission Route
+                                                LPER Route
                                             </div>
                                             <ul className="ml-2">
                                                 <li>
@@ -1281,7 +1294,8 @@ export default function MapDrawer() {
                                                     Total Exposure:{' '}
                                                     {leastCarbonRoute.totalExposure?.toFixed(
                                                         2
-                                                    )} µg/㎥
+                                                    )}{' '}
+                                                    µg/㎥
                                                 </li>
                                                 <li>
                                                     Energy Required:{' '}
@@ -1323,7 +1337,8 @@ export default function MapDrawer() {
                                                     Total Exposure:{' '}
                                                     {balancedRoute.totalExposure?.toFixed(
                                                         2
-                                                    )} µg/㎥
+                                                    )}{' '}
+                                                    µg/㎥
                                                 </li>
                                             </ul>
                                         </div>
@@ -1438,26 +1453,31 @@ export default function MapDrawer() {
                                         ) : routePreference == 'balanced' ? (
                                             <li>
                                                 Exposure:{' '}
-                                                {balancedRoute.totalExposure} µg/㎥
+                                                {balancedRoute.totalExposure}{' '}
+                                                µg/㎥
                                             </li>
                                         ) : routePreference == 'shortest' ? (
                                             <li>
                                                 Exposure:{' '}
-                                                {shortestRoute.totalExposure} µg/㎥
+                                                {shortestRoute.totalExposure}{' '}
+                                                µg/㎥
                                             </li>
                                         ) : routePreference == 'fastest' ? (
                                             <li>
                                                 Exposure:{' '}
-                                                {fastestRoute.totalExposure} µg/㎥
+                                                {fastestRoute.totalExposure}{' '}
+                                                µg/㎥
                                             </li>
                                         ) : routePreference == 'emission' ? (
                                             <li>
                                                 Exposure:{' '}
-                                                {leastCarbonRoute.totalExposure} µg/㎥
+                                                {leastCarbonRoute.totalExposure}{' '}
+                                                µg/㎥
                                             </li>
                                         ) : (
                                             <li>
-                                                Exposure: {`No Route Selected`} µg/㎥
+                                                Exposure: {`No Route Selected`}{' '}
+                                                µg/㎥
                                             </li>
                                         )}
 
