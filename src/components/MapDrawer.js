@@ -225,7 +225,7 @@ export default function MapDrawer() {
     async function getMapboxRoutes() {
         console.log('Calling Mapbox API...')
         const query = await fetch(
-            `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${source.position[0]},${source.position[1]};${destination.position[0]},${destination.position[1]}?steps=true&geometries=geojson&alternatives=true&access_token=${mapboxgl.accessToken}`,
+            `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${source.position[0]},${source.position[1]};${destination.position[0]},${destination.position[1]}?steps=true&geometries=geojson&alternatives=true&waypoints_per_route=true&access_token=${mapboxgl.accessToken}`,
             { method: 'GET' }
         )
         const json = await query.json()
@@ -239,7 +239,7 @@ export default function MapDrawer() {
     async function getGraphhopperRoutes(temp_mode) {
         console.log('Calling Graphhopper API...')
         const query = await fetch(
-            `https://graphhopper.com/api/1/route?point=${source.position[1]},${source.position[0]}&point=${destination.position[1]},${destination.position[0]}&vehicle=${temp_mode}&debug=true&key=${process.env.REACT_APP_GRAPHHOPPER_API_KEY}&type=json&points_encoded=false&algorithm=alternative_route&alternative_route.max_paths=4&alternative_route.max_weight_factor=1.4&alternative_route.max_share_factor=0.6&`,
+            `https://graphhopper.com/api/1/route?point=${source.position[1]},${source.position[0]}&point=${destination.position[1]},${destination.position[0]}&vehicle=${temp_mode}&debug=true&key=${process.env.REACT_APP_GRAPHHOPPER_API_KEY}&type=json&points_encoded=false&algorithm=alternative_route&alternative_route.max_paths=4&alternative_route.max_weight_factor=1.4&alternative_route.max_share_factor=0.6&elevation=true`,
             { method: 'GET' }
         )
         const json = await query.json()
@@ -332,7 +332,7 @@ export default function MapDrawer() {
 
         routes = await getGraphhopperRoutes(temp_mode)
         console.log('The graphhopper routes is, ', { routes })
-        ;({ geojson, routes } = await getLeapRoute(routes))
+        ;({ geojson, routes } = await getLeapRoute(routes, temp_mode))
 
         if (temp_mode == 'car') {
             routes[0].time =
@@ -576,12 +576,10 @@ export default function MapDrawer() {
                         break
 
                     case 'fastest':
-                        console.log('Fastest Path...')(
-                            ({ geojson, routes } = await getFastestRoute(
-                                routes,
-                                temp_mode
-                            ))
-                        )
+                        console.log('Fastest Path...')
+                        const res = await getFastestRoute(routes, temp_mode)
+                        geojson = res.geojson
+                        routes = res.routes
 
                         setDistance(routes[0].distance)
 
@@ -629,7 +627,7 @@ export default function MapDrawer() {
                         // otherwise find the leap path and display it.
 
                         //ignoring the traffic in case of the greenest route.
-                        ;({ geojson, routes } = await getLeapRoute(routes))
+                        ;({ geojson, routes } = await getLeapRoute(routes, temp_mode))
 
                         setDistance(routes[0].distance)
 
@@ -998,7 +996,7 @@ export default function MapDrawer() {
                                         LEAP (exposure)
                                     </option>
                                     <option value="emission">
-                                        LPER (emission)
+                                        LCO2 (emission)
                                     </option>
                                     <option value="balanced">
                                         Optimal (recommended)
@@ -1080,6 +1078,12 @@ export default function MapDrawer() {
                     <div>
                         {routePreference != 'all' && (
                             <div className="text-center text-xl">
+                                <span className="text-blue-500">
+                                    {isLoading
+                                        ? prettyMetric(0).humanize()
+                                        : prettyMetric(distance).humanize()}
+                                </span>
+                                <span className="text-gray-500">|</span>{' '}
                                 <span className="text-green-400">
                                     {isLoading
                                         ? prettyMilliseconds(0)
@@ -1087,17 +1091,10 @@ export default function MapDrawer() {
                                         ? prettyMilliseconds(time * 1000)
                                         : prettyMilliseconds(time)}{' '}
                                 </span>
-                                <span className="text-white">|</span>{' '}
-                                <span className="text-blue-500">
-                                    {isLoading
-                                        ? prettyMetric(0).humanize()
-                                        : prettyMetric(distance).humanize()}
-                                </span>
-                                <span className="text-white">|</span>{' '}
+                                <span className="text-gray-500">|</span>{' '}
                                 <span className="text-red-500">
-                                    {isLoading
-                                        ? prettyMetric(0).humanize()
-                                        : prettyMetric(exposure).humanize()}
+                                    {isLoading ? 0 : exposure?.toFixed(2)} μg/㎥
+                                    h
                                 </span>
                             </div>
                         )}
@@ -1199,6 +1196,13 @@ export default function MapDrawer() {
                                                     )}{' '}
                                                     µg/㎥
                                                 </li>
+                                                <li>
+                                                    Energy Required:{' '}
+                                                    {shortestRoute.totalEnergy?.toFixed(
+                                                        2
+                                                    )}{' '}
+                                                    kJ
+                                                </li>
                                             </ul>
                                         </div>
                                         <div>
@@ -1233,6 +1237,13 @@ export default function MapDrawer() {
                                                     )}{' '}
                                                     µg/㎥
                                                 </li>
+                                                <li>
+                                                    Energy Required:{' '}
+                                                    {fastestRoute.totalEnergy?.toFixed(
+                                                        2
+                                                    )}{' '}
+                                                    kJ
+                                                </li>
                                             </ul>
                                         </div>
                                         <div>
@@ -1264,12 +1275,19 @@ export default function MapDrawer() {
                                                     )}{' '}
                                                     µg/㎥
                                                 </li>
+                                                <li>
+                                                    Energy Required:{' '}
+                                                    {leapRoute.totalEnergy?.toFixed(
+                                                        2
+                                                    )}{' '}
+                                                    kJ
+                                                </li>
                                             </ul>
                                         </div>
 
                                         <div>
                                             <div className="font-bold underline">
-                                                LPER Route
+                                                LCO2 Route
                                             </div>
                                             <ul className="ml-2">
                                                 <li>
@@ -1299,10 +1317,9 @@ export default function MapDrawer() {
                                                 </li>
                                                 <li>
                                                     Energy Required:{' '}
-                                                    {(
-                                                        leastCarbonRoute.totalEnergy /
-                                                        1000
-                                                    )?.toFixed(2)}{' '}
+                                                    {leastCarbonRoute?.totalEnergy?.toFixed(
+                                                        2
+                                                    )}{' '}
                                                     kJ
                                                 </li>
                                             </ul>
@@ -1339,6 +1356,13 @@ export default function MapDrawer() {
                                                         2
                                                     )}{' '}
                                                     µg/㎥
+                                                </li>
+                                                <li>
+                                                    Energy Required:{' '}
+                                                    {balancedRoute.totalEnergy?.toFixed(
+                                                        2
+                                                    )}{' '}
+                                                    kJ
                                                 </li>
                                             </ul>
                                         </div>
@@ -1448,30 +1472,41 @@ export default function MapDrawer() {
                                         {routePreference == 'leap' ? (
                                             <li>
                                                 Exposure:{' '}
-                                                {leapRoute.totalExposure} µg/㎥
+                                                {leapRoute.totalExposure?.toFixed(
+                                                    2
+                                                )}{' '}
+                                                µg/㎥
                                             </li>
                                         ) : routePreference == 'balanced' ? (
                                             <li>
                                                 Exposure:{' '}
-                                                {balancedRoute.totalExposure}{' '}
+                                                {balancedRoute.totalExposure?.toFixed(
+                                                    2
+                                                )}{' '}
                                                 µg/㎥
                                             </li>
                                         ) : routePreference == 'shortest' ? (
                                             <li>
                                                 Exposure:{' '}
-                                                {shortestRoute.totalExposure}{' '}
+                                                {shortestRoute.totalExposure?.toFixed(
+                                                    2
+                                                )}{' '}
                                                 µg/㎥
                                             </li>
                                         ) : routePreference == 'fastest' ? (
                                             <li>
                                                 Exposure:{' '}
-                                                {fastestRoute.totalExposure}{' '}
+                                                {fastestRoute.totalExposure?.toFixed(
+                                                    2
+                                                )}{' '}
                                                 µg/㎥
                                             </li>
                                         ) : routePreference == 'emission' ? (
                                             <li>
                                                 Exposure:{' '}
-                                                {leastCarbonRoute.totalExposure}{' '}
+                                                {leastCarbonRoute.totalExposure?.toFixed(
+                                                    2
+                                                )}{' '}
                                                 µg/㎥
                                             </li>
                                         ) : (
@@ -1481,13 +1516,64 @@ export default function MapDrawer() {
                                             </li>
                                         )}
 
+                                        {routePreference == 'leap' ? (
+                                            <li>
+                                                Energy Required:{' '}
+                                                {leapRoute &&
+                                                    leapRoute.totalEnergy?.toFixed(
+                                                        2
+                                                    )}{' '}
+                                                kJ
+                                            </li>
+                                        ) : routePreference == 'balanced' ? (
+                                            <li>
+                                                Energy Required:{' '}
+                                                {balancedRoute &&
+                                                    balancedRoute.totalEnergy?.toFixed(
+                                                        2
+                                                    )}{' '}
+                                                kJ
+                                            </li>
+                                        ) : routePreference == 'shortest' ? (
+                                            <li>
+                                                Energy Required:{' '}
+                                                {shortestRoute &&
+                                                    shortestRoute.totalEnergy?.toFixed(
+                                                        2
+                                                    )}{' '}
+                                                kJ
+                                            </li>
+                                        ) : routePreference == 'fastest' ? (
+                                            <li>
+                                                Energy Required:{' '}
+                                                {fastestRoute &&
+                                                    fastestRoute.totalEnergy?.toFixed(
+                                                        2
+                                                    )}{' '}
+                                                kJ
+                                            </li>
+                                        ) : routePreference == 'emission' ? (
+                                            <li>
+                                                Energy Required:{' '}
+                                                {leastCarbonRoute &&
+                                                    leastCarbonRoute.totalEnergy?.toFixed(
+                                                        2
+                                                    )}{' '}
+                                                kJ
+                                            </li>
+                                        ) : (
+                                            <li>
+                                                Energy Required:{' '}
+                                                {`No Route Selected`}{' '}
+                                            </li>
+                                        )}
+
                                         {routePreference == 'emission' && (
                                             <li>
                                                 Energy Required:{' '}
-                                                {(
-                                                    leastCarbonRoute.totalEnergy /
-                                                    1000
-                                                ).toFixed(2)}{' '}
+                                                {leastCarbonRoute.totalEnergy?.toFixed(
+                                                    2
+                                                )}{' '}
                                                 kJ
                                             </li>
                                         )}

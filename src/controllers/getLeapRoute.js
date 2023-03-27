@@ -1,6 +1,7 @@
+import calculateRouteEnergy from '../utils/calculateRouteEnergy'
 import calculateRouteExposureGraphhopper  from '../utils/calculateRouteExposureGraphhopper'
 
-export default async function getLeapRoute(routes) {
+export default async function getLeapRoute(routes, mode) {
     const geojson = {
         type: 'Feature',
         properties: {},
@@ -17,6 +18,9 @@ export default async function getLeapRoute(routes) {
     // compare and sort the routes based on the aqi values
     routes.sort((a, b) => a.totalExposure - b.totalExposure)
     console.log({ routes })
+
+    routes[0].totalEnergy = calculateRouteEnergy(routes[0], mode)
+    console.log("Inside getLeapRoute", routes[0].totalEnergy)
 
     geojson.geometry.coordinates = routes[0].points.coordinates
     console.log("Inside getLeapRoute", routes)
