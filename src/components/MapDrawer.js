@@ -11,6 +11,7 @@ import getBalancedRoute from '../controllers/getBalancedRoute.js'
 import getLeastCarbonRoute from '../controllers/getLeastCarbonRoute.js'
 const prettyMetric = require('pretty-metric')
 const mapboxgl = require('mapbox-gl/dist/mapbox-gl.js')
+import { formatISO } from 'date-fns'
 
 export default function MapDrawer() {
     // Drawer
@@ -23,6 +24,8 @@ export default function MapDrawer() {
     const destination = useInput('')
     const [mode, setMode] = useState('car')
     const [routePreference, setRoutePreference] = useState('shortest')
+    const [departureTime, setDepartureTime] = useState('')
+
     const [distance, setDistance] = useState(0)
     const [time, setTime] = useState(0)
     const [exposure, setExposure] = useState(0)
@@ -34,6 +37,35 @@ export default function MapDrawer() {
     const [leapRoute, setLeapRoute] = useState({})
     const [balancedRoute, setBalancedRoute] = useState({})
     const [leastCarbonRoute, setLeastCarbonRoute] = useState({})
+
+    // create options with 30 min interval
+    const options = [
+        { value: 0, label: 'Now' },
+        { value: 1, label: 'current + 0:30' },
+        { value: 2, label: 'current + 1:00' },
+        { value: 3, label: 'current + 1:30' },
+        { value: 4, label: 'current + 2:00' },
+        { value: 5, label: 'current + 2:30' },
+        { value: 6, label: 'current + 3:00' },
+        { value: 7, label: 'current + 3:30' },
+        { value: 8, label: 'current + 4:00' },
+        { value: 9, label: 'current + 4:30' },
+        { value: 10, label: 'current + 5:00' },
+        { value: 11, label: 'current + 5:30' },
+        { value: 12, label: 'current + 6:00' },
+        { value: 13, label: 'current + 6:30' },
+        { value: 14, label: 'current + 7:00' },
+        { value: 15, label: 'current + 7:30' },
+        { value: 16, label: 'current + 8:00' },
+        { value: 17, label: 'current + 8:30' },
+        { value: 18, label: 'current + 9:00' },
+        { value: 19, label: 'current + 9:30' },
+        { value: 20, label: 'current + 10:00' },
+        { value: 21, label: 'current + 10:30' },
+        { value: 22, label: 'current + 11:00' },
+        { value: 23, label: 'current + 11:30' },
+        { value: 24, label: 'current + 12:00' },
+    ]
 
     // Map
     // Initial Location
@@ -225,7 +257,13 @@ export default function MapDrawer() {
     async function getMapboxRoutes() {
         console.log('Calling Mapbox API...')
         const query = await fetch(
-            `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${source.position[0]},${source.position[1]};${destination.position[0]},${destination.position[1]}?steps=true&geometries=geojson&alternatives=true&waypoints_per_route=true&access_token=${mapboxgl.accessToken}`,
+            `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${
+                source.position[0]
+            },${source.position[1]};${destination.position[0]},${
+                destination.position[1]
+            }?steps=true&geometries=geojson&alternatives=true&waypoints_per_route=true&depart_at=${formatISO(
+                new Date(new Date().getTime() + departureTime * 30 * 60000)
+            )}&access_token=${mapboxgl.accessToken}`,
             { method: 'GET' }
         )
         const json = await query.json()
@@ -447,6 +485,7 @@ export default function MapDrawer() {
                     ' and routePreference: ' +
                     routePreference
             )
+            console.log('Time: ', departureTime)
             try {
                 console.log('Before query...')
 
@@ -627,7 +666,10 @@ export default function MapDrawer() {
                         // otherwise find the leap path and display it.
 
                         //ignoring the traffic in case of the greenest route.
-                        ;({ geojson, routes } = await getLeapRoute(routes, temp_mode))
+                        ;({ geojson, routes } = await getLeapRoute(
+                            routes,
+                            temp_mode
+                        ))
 
                         setDistance(routes[0].distance)
 
@@ -969,39 +1011,57 @@ export default function MapDrawer() {
                                 {/* <option value="truck">Bus</option> */}
                                 {/* <option value="car">Car - Driving</option> */}
                                 <option value="scooter">Motorbike</option>
-                                <option value="bike">Cycling</option>
-                                <option value="foot">Walking</option>
+                                {/* <option value="bike">Cycling</option>
+                                <option value="foot">Walking</option> */}
                             </select>
 
+                            <select
+                                className="select select-sm select-bordered max-w-xs"
+                                required
+                                value={routePreference}
+                                onChange={(e) => {
+                                    setRoutePreference(e.target.value)
+                                    console.log(e.target.value)
+                                }}
+                            >
+                                <option disabled value="none">
+                                    -- Select Route Preference --
+                                </option>
+                                <option value="shortest">
+                                    Shortest (Distance)
+                                </option>
+                                <option value="fastest">Fastest (Time)</option>
+                                <option value="leap">LEAP (exposure)</option>
+                                <option value="emission">
+                                    LCO2 (emission)
+                                </option>
+                                <option value="balanced">
+                                    Optimal (recommended)
+                                </option>
+                                <option value="all">All</option>
+                            </select>
                             <div className="flex flex-row justify-evenly items-center">
                                 <select
-                                    className="select select-sm select-bordered max-w-xs"
                                     required
-                                    value={routePreference}
+                                    className="select select-sm select-bordered max-w-xs"
+                                    value={departureTime}
                                     onChange={(e) => {
-                                        setRoutePreference(e.target.value)
+                                        setDepartureTime(e.target.value)
+
                                         console.log(e.target.value)
+                                        console.log('Departure time changed')
                                     }}
                                 >
-                                    <option disabled value="none">
-                                        -- Select Route Preference --
+                                    <option value="" disabled selected>
+                                        ------Departure Delay------
                                     </option>
-                                    <option value="shortest">
-                                        Shortest (Distance)
-                                    </option>
-                                    <option value="fastest">
-                                        Fastest (Time)
-                                    </option>
-                                    <option value="leap">
-                                        LEAP (exposure)
-                                    </option>
-                                    <option value="emission">
-                                        LCO2 (emission)
-                                    </option>
-                                    <option value="balanced">
-                                        Optimal (recommended)
-                                    </option>
-                                    <option value="all">All</option>
+                                    {options.map((option) => {
+                                        return (
+                                            <option value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        )
+                                    })}
                                 </select>
                                 <div className="ml-2">
                                     <svg

@@ -87,3 +87,13 @@ Approach 2:
 2. Determining the route which produces less exposure to air pollution.
 
 3. 3rd best fastest route may be considered when these two routes have aqi not significantly different. - Let's hope, the routes have very different AQI.
+
+
+### Forcasting Routes
+#### Driving Profile 
+>depart_at=
+The departure time, formatted as a timestamp in ISO-8601 format in the local time at the route origin. The travel time, returned in duration, is a prediction for travel time based on historical travel data. The route is calculated in a time-dependent manner. For example, a trip that takes two hours will consider changing historic traffic conditions across the two-hour window, instead of only at the specified depart_at time. The route takes timed turn restrictions and conditional access restrictions into account based on the requested departure time.
+
+### Driving - Traffic Profile
+>depart_at=
+The departure time, formatted as a timestamp in ISO-8601 format in the local time at the route origin. The travel time, returned in duration, is a prediction for travel time based on historical travel data and live traffic. Live traffic is gently mixed with historical data when depart_at is set close to current time. The route takes timed turn restrictions and conditional access restrictions into account based on the requested arrival time.
